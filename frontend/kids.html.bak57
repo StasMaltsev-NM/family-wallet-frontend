@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Wallet — Ребёнок</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .section { margin: 30px 0; padding: 20px; border: 2px solid #ccc; }
+    h1, h2 { margin-top: 0; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
+    .task-item { padding: 15px; margin: 10px 0; border: 1px solid #ddd; background: #f9f9f9; }
+    input { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+    .error { color: red; font-weight: bold; }
+    .success { color: green; font-weight: bold; }
+    .balance { font-size: 24px; font-weight: bold; margin: 20px 0; }
+    .pending-dashboard { padding: 15px; margin: 10px 0; background: #fff4cc; border: 2px solid #ffcc00; font-size: 18px; font-weight: bold; }
+    .status-IDLE { background: #f0f0f0; }
+    .status-WAITING { background: #fff4cc; }
+    .status-CONFIRMED { background: #d4edda; }
+    .empty-state { text-align: center; padding: 40px; color: #999; font-size: 18px; }
+    .history-item { padding: 10px; margin: 5px 0; background: #f9f9f9; border-left: 3px solid #4CAF50; }
+
+    .reward-item { padding: 15px; margin: 10px 0; border: 2px solid #4CAF50; background: #f0fff0; border-radius: 8px; }
+    .reward-icon { font-size: 48px; display: inline-block; margin-right: 15px; }
+    .reward-info { display: inline-block; vertical-align: top; }
+    .reward-price { font-size: 20px; font-weight: bold; color: #FF9800; margin: 10px 0; }
+    .buy-button { background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; }
+    .buy-button:disabled { background: #ccc; cursor: not-allowed; }
+    .my-reward-item { padding: 15px; margin: 10px 0; border: 2px solid #FF9800; background: #fff8e1; border-radius: 8px; }
+    .confirm-button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+
+    .dream-dashboard { padding: 20px; margin: 20px 0; border: 2px solid #9C27B0; background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-radius: 12px; position: relative; }
+    .dream-input-form { display: flex; gap: 10px; align-items: center; }
+    .dream-input { flex: 1; padding: 12px; border: 2px solid #9C27B0; border-radius: 8px; font-size: 16px; }
+    .dream-button { background: #9C27B0; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+    .dream-button:hover { background: #7B1FA2; }
+    .dream-close { position: absolute; top: 10px; right: 10px; background: #f44336; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+    .dream-progress-bar { width: 100%; height: 30px; background: #e0e0e0; border-radius: 15px; overflow: hidden; margin: 15px 0; }
+    .dream-progress-fill { height: 100%; background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%); transition: width 0.3s; }
+    .dream-status { color: #9C27B0; font-weight: bold; margin-top: 10px; }
+
+
+    /* Навигация */
+    .nav-tabs { display: flex; background: #333; margin: 0; padding: 0; }
+    .nav-tabs button { flex: 1; padding: 15px; background: #333; color: white; border: none; cursor: pointer; font-size: 16px; }
+    .nav-tabs button.active { background: #4CAF50; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+  </style>
+</head>
+<body>
+  <h1>👶 Family Wallet — Ребёнок</h1>
+  
+  
+  <div class="section">
+    <h2>Авторизация</h2>
+    <input type="text" id="inviteCode" placeholder="Введите код ребёнка (KID_STAS)" value="KID_STAS">
+    <button onclick="login()">Войти</button>
+    <div id="authStatus"></div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="active" onclick="showTab('tab-wallet')">💰 Кошелёк</button>
+    <button onclick="showTab('tab-missions')">🎯 Миссии</button>
+    <button onclick="showTab('tab-shop')">🎁 Магазин</button>
+    <button onclick="showTab('tab-magic')">✨ Магия</button>
+    <button onclick="showTab('tab-profile')">👤 Я</button>
+  </div>
+
+  <!-- Вкладка: Кошелёк -->
+  <div id="tab-wallet" class="tab-content active">
+  <div class="section" id="dreamSection" style="display:none;">
+    <div id="dreamDashboard"></div>
+  </div>
+
+  <div class="section" id="balanceSection" style="display:none;">
+    <h2>Мой баланс</h2>
+    <div class="balance" id="balanceDisplay"></div>
+    <div id="pendingDashboard"></div>
+  </div>
+
+  <div class="section" id="myRewardsSection" style="display:none;">
+    <h2>🎁 Мои награды</h2>
+    <div id="myRewardsList"></div>
+  </div>
+
+  <div class="section" id="historySection" style="display:none;">
+    <h2>История</h2>
+    <div id="historyList"></div>
+  </div>
+  </div>
+
+  <!-- Вкладка: Миссии -->
+  <div id="tab-missions" class="tab-content">
+  <div class="section" id="tasksSection" style="display:none;">
+    <h2>Мои миссии</h2>
+    <!-- Баланс -->
+    <div style="margin: 15px 0; padding: 12px 20px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 16px; font-weight: bold; color: #333;">💰 Баланс</span>
+      <span id="missionsBalance" style="font-size: 20px; font-weight: bold; color: #333;">0 ⭐</span>
+    </div>
+    <div id="tasksList"></div>
+  </div>
+  </div>
+
+  <!-- Вкладка: Магазин -->
+  <div id="tab-shop" class="tab-content">
+  <div class="section" id="shopSection" style="display:none;">
+    <h2>🛒 Магазин наград</h2>
+    <!-- Баланс -->
+    <div style="margin: 15px 0;">
+      <!-- Доступный баланс -->
+      <div style="margin-bottom: 10px; padding: 12px 20px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 16px; font-weight: bold; color: #333;">💰 Доступно</span>
+        <span id="shopBalance" style="font-size: 20px; font-weight: bold; color: #333;">0 ⭐</span>
+      </div>
+      <!-- На подтверждении -->
+      <div style="padding: 12px 20px; background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 16px; font-weight: bold; color: #333;">⏳ На подтверждении</span>
+        <span id="shopPending" style="font-size: 20px; font-weight: bold; color: #333;">0 ⭐</span>
+      </div>
+    </div>
+    <div id="shopRewardsList"></div>
+  </div>
+  </div>
+
+
+  <!-- Вкладка: Магия -->
+  <div id="tab-magic" class="tab-content">
+  <div class="section" id="magicSection" style="display:none;">
+    <h2>✨ Магия аватара</h2>
+    
+    <!-- Результат генерации -->
+    <div id="magicResult" style="display:none; margin: 20px 0;">
+      <div style="position: relative; border: 3px solid #FFD700; border-radius: 12px; overflow: hidden;">
+        <img id="magicImage" src="" alt="Сгенерированный аватар" style="width: 100%; display: block;">
+        <div style="position: absolute; top: 10px; right: 10px; background: rgba(76, 175, 80, 0.9); color: white; padding: 8px 16px; border-radius: 20px; font-weight: bold;">
+          ✓ ГОТОВО
+        </div>
+      </div>
+      
+      <!-- Кнопки действий -->
+      <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button onclick="downloadMagicImage()" style="flex: 1; min-width: 120px; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+          📥 Скачать
+        </button>
+        <button onclick="shareMagicImage()" style="flex: 1; min-width: 120px; padding: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+          📤 Поделиться
+        </button>
+        <button onclick="setMagicAsAvatar()" style="flex: 1; min-width: 120px; padding: 12px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+          👤 На аватарку
+        </button>
+      </div>
+      
+      <!-- Кнопка "Создать ещё" -->
+      <button onclick="resetMagic()" style="width: 100%; margin-top: 10px; padding: 12px; background: #666; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+        🔄 Создать ещё
+      </button>
+    </div>
+    
+    <!-- Экран загрузки -->
+    <div id="magicLoading" style="display:none; text-align: center; padding: 40px 20px;">
+      <div style="width: 80px; height: 80px; margin: 0 auto 20px; border: 5px solid #f3f3f3; border-top: 5px solid #FFD700; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <h3 style="color: #FFD700; margin: 0;">✨ КОЛДУЕМ...</h3>
+      <p style="color: #999; margin-top: 10px;">Создаём твой волшебный аватар</p>
+    </div>
+    
+    <!-- Выбор игрового мира -->
+    <div id="magicWorldSelector">
+      <p style="color: #FFD700; font-weight: bold; margin: 20px 0 15px 0;">⚡ ВЫБЕРИ ИГРОВОЙ МИР:</p>
+      
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+        <!-- Роблокс -->
+        <div onclick="selectWorld('roblox')" id="world-roblox" class="magic-world-card" style="cursor: pointer; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; transition: transform 0.2s; border: 3px solid transparent;">
+          <div style="font-size: 48px; margin-bottom: 10px;">🤖</div>
+          <div style="color: white; font-weight: bold;">РОБЛОКС</div>
+        </div>
+        
+        <!-- Гибли -->
+        <div onclick="selectWorld('ghibli')" id="world-ghibli" class="magic-world-card" style="cursor: pointer; padding: 20px; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); border-radius: 12px; text-align: center; transition: transform 0.2s; border: 3px solid transparent;">
+          <div style="font-size: 48px; margin-bottom: 10px;">🌳</div>
+          <div style="color: #333; font-weight: bold;">ГИБЛИ</div>
+        </div>
+        
+        <!-- Аниме -->
+        <div onclick="selectWorld('anime')" id="world-anime" class="magic-world-card" style="cursor: pointer; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); border-radius: 12px; text-align: center; transition: transform 0.2s; border: 3px solid transparent;">
+          <div style="font-size: 48px; margin-bottom: 10px;">✨</div>
+          <div style="color: #333; font-weight: bold;">АНИМЕ</div>
+        </div>
+        
+        <!-- Майнкрафт -->
+        <div onclick="selectWorld('minecraft')" id="world-minecraft" class="magic-world-card" style="cursor: pointer; padding: 20px; background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); border-radius: 12px; text-align: center; transition: transform 0.2s; border: 3px solid transparent;">
+          <div style="font-size: 48px; margin-bottom: 10px;">🎩</div>
+          <div style="color: #333; font-weight: bold;">МАЙНКРАФТ</div>
+        </div>
+      </div>
+      
+      <!-- Кнопка генерации -->
+      <button id="generateButton" onclick="generateMagic()" disabled style="width: 100%; margin-top: 20px; padding: 15px; background: #666; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: not-allowed;">
+        🪄 СОЗДАТЬ АВАТАР
+      </button>
+    </div>
+  </div>
+  </div>
+  <!-- Вкладка: Я (Профиль) -->
+  <div id="tab-profile" class="tab-content">
+    <div class="section">
+      <h2>👤 Мой профиль</h2>
+      <div id="profileInfo">
+        <p><strong>Имя:</strong> <span id="profileName">-</span></p>
+        <p><strong>Баланс:</strong> <span id="profileBalance">0</span> ₽</p>
+
+        <div style="margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+          <h3 style="margin: 0 0 10px 0; font-size: 18px;">🏆 <span id="profileLevelName">Новичок</span> <span id="profileLevelIcon">❤️</span></h3>
+          <div style="position: relative; background: rgba(255,255,255,0.3); border-radius: 10px; height: 24px; overflow: hidden; margin-bottom: 8px;">
+            <div id="profileProgressBar" style="background: white; height: 100%; width: 0%; transition: width 0.5s;"></div>
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+              <span id="marker0" style="position: absolute; left: 0%; top: 50%; transform: translate(0%, -50%); font-size: 16px; transition: opacity 0.3s;">❤️</span>
+              <span id="marker25" style="position: absolute; left: 25%; top: 50%; transform: translate(-50%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">🔷</span>
+              <span id="marker50" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">🔺</span>
+              <span id="marker75" style="position: absolute; left: 75%; top: 50%; transform: translate(-50%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">⭐</span>
+              <span id="marker100" style="position: absolute; left: 100%; top: 50%; transform: translate(-100%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">🏆</span>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 14px; opacity: 0.9;">
+            <span id="profileProgressText">0/25 миссий</span> • 
+            <span id="profileProgressNext">До Опытного: 25 миссий</span>
+          </p>
+        </div>
+        <p><strong>Выполнено миссий:</strong> <span id="profileMissionsCount">0</span></p>
+        <p><strong>Получено наград:</strong> <span id="profileRewardsCount">0</span></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://family-wallet-api.maltsevstas21.workers.dev';
+    let currentCode = '';
+    let childId = '';
+    let childName = '';
+    let myRewards = [];
+
+    async function login() {
+      const code = document.getElementById('inviteCode').value.trim();
+      if (!code) {
+        document.getElementById('authStatus').innerHTML = '<p class="error">Введите код</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/api/auth/whoami`, {
+          headers: { 'X-Invite-Code': code }
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          document.getElementById('authStatus').innerHTML = `<p class="error">Ошибка: ${err.error}</p>`;
+          return;
+        }
+
+        const data = await res.json();
+        
+        if (data.role !== 'child') {
+          document.getElementById('authStatus').innerHTML = '<p class="error">Этот код для родителя. Используйте детский код.</p>';
+          return;
+        }
+
+        currentCode = code;
+        childId = data.child_id;
+        childName = data.name;
+        
+        document.getElementById('authStatus').innerHTML = `<p class="success">✅ Привет, ${data.name}!</p>`;
+        document.getElementById('balanceSection').style.display = 'block';
+        document.getElementById('tasksSection').style.display = 'block';
+        document.getElementById('historySection').style.display = 'block';
+        document.getElementById('dreamSection').style.display = 'block';
+        document.getElementById('myRewardsSection').style.display = 'block';
+        document.getElementById('shopSection').style.display = 'block';
+
+        updateBalance(data.balance, data.pending_balance);
+        loadTasks();
+        loadHistory();
+        loadMyRewards();
+        loadShopRewards();
+        loadMyDream();
+
+      } catch (err) {
+        document.getElementById('authStatus').innerHTML = `<p class="error">Ошибка сети: ${err.message}</p>`;
+      }
+    }
+
+    function updateBalance(balance, pending) {
+      document.getElementById('balanceDisplay').innerHTML = `${balance} ⭐`;
+      
+      if (pending > 0) {
+        document.getElementById('pendingDashboard').innerHTML = `
+          <div class="pending-dashboard">
+            ⏳ Ожидает подтверждения: ${pending} ⭐
+          </div>
+        `;
+      } else {
+        document.getElementById('pendingDashboard').innerHTML = '';
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+
+        const data = await res.json();
+        
+        if (!Array.isArray(data.tasks)) {
+          document.getElementById('tasksList').innerHTML = '<p class="error">Ошибка загрузки миссий</p>';
+          return;
+        }
+
+        const activeTasks = data.tasks.filter(t => t.status === 'IDLE' || t.status === 'WAITING' || t.status === 'REJECTED');
+
+        if (activeTasks.length === 0) {
+          document.getElementById('tasksList').innerHTML = '<div class="empty-state">📭 Миссий пока нет<br><small>Обратись к родителю</small></div>';
+          return;
+        }
+
+        document.getElementById('tasksList').innerHTML = activeTasks.map(task => {
+          let buttonHtml = '';
+          let statusText = '';
+
+          if (task.status === 'IDLE' || task.status === 'REJECTED') {
+            buttonHtml = `<button onclick="completeTask('${task.id}')">✅ Я это сделал!</button>`;
+            statusText = task.status === 'REJECTED' ? '<strong style="color: red;">❌ Отклонено — попробуй ещё раз</strong>' : '';
+          } else if (task.status === 'WAITING') {
+            buttonHtml = '';
+            statusText = '<strong style="color: orange;">⏳ Ожидает родителя!</strong>';
+          }
+
+          return `
+            <div class="task-item status-${task.status}">
+              <strong>${task.icon || '✅'} ${task.title}</strong> — ${task.reward_amount} ⭐<br>
+              ${task.description || ''}<br>
+              ${statusText}
+              ${buttonHtml}
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        document.getElementById('tasksList').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+
+        const data = await res.json();
+        
+        if (!Array.isArray(data.tasks)) {
+          return;
+        }
+
+        const completedTasks = data.tasks.filter(t => t.status === 'CONFIRMED');
+
+        if (completedTasks.length === 0) {
+          document.getElementById('historyList').innerHTML = '<div class="empty-state">История пуста</div>';
+          return;
+        }
+
+        document.getElementById('historyList').innerHTML = completedTasks.map(task => `
+          <div class="history-item">
+            ✅ ${task.title} — +${task.reward_amount} ⭐
+          </div>
+        `).join('');
+
+      } catch (err) {
+        document.getElementById('historyList').innerHTML = `<p class="error">Ошибка загрузки истории</p>`;
+      }
+    }
+
+    async function completeTask(taskId) {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/complete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ task_id: taskId })
+        });
+
+        const data = await res.json();
+        
+        // Без alert — просто обновляем UI
+        loadTasks();
+        loadHistory();
+        loadMyRewards();
+        loadShopRewards();
+        loadMyDream();
+        
+        // Обновляем баланс
+        const authRes = await fetch(`${API_URL}/api/auth/whoami`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const authData = await authRes.json();
+        updateBalance(authData.balance, authData.pending_balance);
+
+      } catch (err) {
+        console.error('Ошибка:', err);
+      }
+    }
+
+    // Автообновление каждые 5 секунд
+    setInterval(() => {
+      if (currentCode) {
+        loadTasks();
+        loadHistory();
+        loadMyRewards();
+        loadShopRewards();
+        loadMyDream();
+        
+        fetch(`${API_URL}/api/auth/whoami`, {
+          headers: { 'X-Invite-Code': currentCode }
+        })
+        .then(r => r.json())
+        .then(d => updateBalance(d.balance, d.pending_balance))
+        .catch(() => {});
+      }
+    }, 5000);
+
+    // ============================
+    // МАГАЗИН НАГРАД
+    // ============================
+
+    async function loadShopRewards() {
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки наград');
+        
+        const data = await res.json();
+        const list = document.getElementById('shopRewardsList');
+        
+        if (!data.rewards || data.rewards.length === 0) {
+          list.innerHTML = '<div class="empty-state">Пока нет доступных наград</div>';
+          return;
+        }
+        
+        list.innerHTML = data.rewards.map(reward => `
+          <div class="reward-item">
+            <span class="reward-icon">${reward.icon}</span>
+            <div class="reward-info">
+              <h3>${reward.title}</h3>
+              <p>${reward.description || ''}</p>
+              <div class="reward-price">${reward.price} ⭐</div>
+              <button class="buy-button" onclick="purchaseReward('${reward.id}', ${reward.price})">
+                Купить за ${reward.price} ⭐
+              </button>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (err) {
+        document.getElementById('shopRewardsList').innerHTML = 
+          `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function purchaseReward(rewardId, price) {
+      const currentBalance = parseInt(document.getElementById('balanceDisplay').innerText.split(':')[1]);
+      
+      if (currentBalance < price) {
+        alert('Недостаточно средств!');
+        return;
+      }
+      
+      if (!confirm(`Купить эту награду за ${price} ⭐?`)) return;
+      
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/purchase`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ reward_id: rewardId })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Ошибка: ${err.error || 'Не удалось купить награду'}`);
+          return;
+        }
+        
+        const data = await res.json();
+        
+        // Обновляем баланс и списки
+        updateBalance(data.new_balance, 0);
+        loadShopRewards();
+        loadMyDream();
+        loadMyRewards();
+        
+      } catch (err) {
+        alert(`Ошибка: ${err.message}`);
+      }
+    }
+
+    async function loadMyRewards() {
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/purchases`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки покупок');
+        
+        const data = await res.json();
+        const list = document.getElementById('myRewardsList');
+        
+        myRewards = data.purchases || [];
+        if (!data.purchases || data.purchases.length === 0) {
+          list.innerHTML = '<div class="empty-state">У тебя пока нет наград</div>';
+          return;
+        }
+        
+        list.innerHTML = data.purchases.filter(p => p.status === 'pending').map(purchase => `
+          <div class="my-reward-item">
+            <span class="reward-icon">${purchase.reward_icon}</span>
+            <div class="reward-info">
+              <h3>${purchase.reward_title}</h3>
+              <div class="reward-price">${purchase.price} ⭐</div>
+              <p style="color: #FF9800; font-weight: bold;">⏳ Ожидает выдачи</p>
+              <button class="confirm-button" onclick="confirmReceived('${purchase.id}')">
+                Получил награду ✅
+              </button>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (err) {
+        document.getElementById('myRewardsList').innerHTML = 
+          `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function confirmReceived(purchaseId) {
+      // Проверяем статус награды
+      const reward = myRewards.find(r => r.id === purchaseId);
+      if (!reward || reward.status === 'received') {
+        alert('Эта награда уже получена!');
+        return;
+      }
+
+      
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/confirm-received`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ purchase_id: purchaseId })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Ошибка: ${err.error}`);
+          return;
+        }
+        
+        const data = await res.json();
+        
+        loadMyRewards();
+        
+      } catch (err) {
+        alert(`Ошибка: ${err.message}`);
+      }
+    }
+
+
+    // ============================
+    // МЕЧТЫ РЕБЁНКА
+    // ============================
+
+    async function loadMyDream() {
+      // Не обновляем если пользователь печатает
+      const input = document.getElementById('dreamTitleInput');
+      if (input && document.activeElement === input) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_URL}/api/dreams/my`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки мечты');
+        
+        const data = await res.json();
+        const dashboard = document.getElementById('dreamDashboard');
+        
+        if (!data.dream) {
+          // Показываем форму создания мечты
+          dashboard.innerHTML = `
+            <div class="dream-dashboard">
+              <h2>💭 Моя мечта</h2>
+              <div class="dream-input-form">
+                <input type="text" id="dreamTitleInput" class="dream-input" placeholder="О чём ты мечтаешь?" maxlength="100">
+                <button class="dream-button" onclick="createDream()">+ Добавить</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        
+        const dream = data.dream;
+        
+        if (dream.status === 'pending') {
+          // Ожидает подтверждения родителя
+          dashboard.innerHTML = `
+            <div class="dream-dashboard">
+              <button class="dream-close" onclick="deleteDream('${dream.id}')">✕</button>
+              <h2>🎯 ${dream.title}</h2>
+              <div class="dream-status">⏳ Ожидает подтверждения родителя...</div>
+            </div>
+          `;
+        } else if (dream.status === 'active') {
+          // Показываем прогресс
+          const progress = Math.min(100, Math.round((dream.current_amount / dream.target_amount) * 100));
+          
+          dashboard.innerHTML = `
+            <div class="dream-dashboard">
+              <button class="dream-close" onclick="deleteDream('${dream.id}')">✕</button>
+              <h2>🎯 ${dream.title}</h2>
+              <div class="dream-progress-bar">
+                <div class="dream-progress-fill" style="width: ${progress}%"></div>
+              </div>
+              <div style="font-size: 18px; font-weight: bold; text-align: center;">
+                ${dream.current_amount} / ${dream.target_amount} ⭐
+              </div>
+              <div style="text-align: center; color: #666; margin-top: 5px;">
+                Прогресс: ${progress}%
+              </div>
+            </div>
+          `;
+        }
+        
+      } catch (err) {
+        console.error('Ошибка загрузки мечты:', err);
+      }
+    }
+
+    async function createDream() {
+      const input = document.getElementById('dreamTitleInput');
+      const title = input.value.trim();
+      
+      if (!title) {
+        alert('Введи название мечты!');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_URL}/api/dreams/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ title })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Ошибка: ${err.error || 'Не удалось создать мечту'}`);
+          return;
+        }
+        
+        const data = await res.json();
+        
+        loadMyDream();
+        
+      } catch (err) {
+        alert(`Ошибка: ${err.message}`);
+      }
+    }
+
+    async function deleteDream(dreamId) {
+      if (!confirm('Удалить мечту?')) return;
+      
+      try {
+        const res = await fetch(`${API_URL}/api/dreams/delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ dream_id: dreamId })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Ошибка: ${err.error}`);
+          return;
+        }
+        
+        const data = await res.json();
+        alert(`✅ ${data.message}`);
+        loadMyDream();
+        
+      } catch (err) {
+        alert(`Ошибка: ${err.message}`);
+      }
+    }
+
+
+
+    // Функция переключения вкладок
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+      
+      // Загрузить данные при переходе на вкладки
+      if (tabId === 'tab-profile') loadProfile();
+      if (tabId === 'tab-missions') loadMissionsBalance();
+      if (tabId === 'tab-shop') loadShopBalance();
+      if (tabId === 'tab-magic') showMagicTab();
+    }
+
+    // Загрузка баланса для вкладки Миссии
+    async function loadMissionsBalance() {
+      try {
+        const res = await fetch(`${API_URL}/api/auth/whoami`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const data = await res.json();
+        document.getElementById('missionsBalance').textContent = `${data.balance || 0} ⭐`;
+      } catch (e) {
+        console.error('Ошибка загрузки баланса миссий:', e);
+      }
+    }
+
+    // Загрузка баланса для вкладки Магазин
+    async function loadShopBalance() {
+      try {
+        const res = await fetch(`${API_URL}/api/auth/whoami`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const data = await res.json();
+        
+        document.getElementById('shopBalance').textContent = `${data.balance || 0} ⭐`;
+        document.getElementById('shopPending').textContent = `${data.pending_balance || 0} ⭐`;
+      } catch (e) {
+        console.error('Ошибка загрузки баланса магазина:', e);
+      }
+    }
+
+    async function loadProfile() {
+      try {
+        const res = await fetch(`${API_URL}/api/auth/whoami`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+
+        if (!res.ok) throw new Error('Ошибка загрузки профиля');
+
+        const data = await res.json();
+
+        // Получить награды
+        const rewardsRes = await fetch(`${API_URL}/api/rewards/received`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const rewardsData = await rewardsRes.json();
+
+        // Получить миссии
+        const tasksRes = await fetch(`${API_URL}/api/tasks/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const tasksData = await tasksRes.json();
+
+        // Обновить UI
+        document.getElementById('profileName').textContent = data.name || 'Ребёнок';
+        document.getElementById('profileBalance').textContent = data.balance || 0;
+        document.getElementById('profileMissionsCount').textContent = 
+          (tasksData.tasks || []).filter(t => t.status === 'CONFIRMED').length;
+        document.getElementById('profileRewardsCount').textContent = rewardsData.count || 0;
+
+        // Обновить прогресс-бар и уровень
+        const missionsCount = (tasksData.tasks || []).filter(t => t.status === 'CONFIRMED').length;
+        const levels = [
+          { name: 'Новичок', icon: '❤️', min: 0, max: 24, next: 'Опытного' },
+          { name: 'Опытный', icon: '🔷', min: 25, max: 49, next: 'Мастера' },
+          { name: 'Мастер', icon: '🔺', min: 50, max: 74, next: 'Эксперта' },
+          { name: 'Эксперт', icon: '⭐', min: 75, max: 99, next: 'Легенды' },
+          { name: 'Легенда', icon: '🏆', min: 100, max: Infinity, next: null }
+        ];
+
+        const currentLevel = levels.find(l => missionsCount >= l.min && missionsCount <= l.max);
+        const progress = currentLevel.max === Infinity 
+          ? 100 
+          : Math.round(((missionsCount - currentLevel.min) / (currentLevel.max - currentLevel.min + 1)) * 100);
+        const remaining = currentLevel.max === Infinity ? 0 : currentLevel.max - missionsCount + 1;
+
+        document.getElementById('profileLevelName').textContent = currentLevel.name;
+        document.getElementById('profileLevelIcon').textContent = currentLevel.icon;
+        document.getElementById('profileProgressBar').style.width = progress + '%';
+        document.getElementById('profileProgressText').textContent = 
+          currentLevel.max === Infinity 
+            ? `${missionsCount} миссий (Максимум!)` 
+            : `${missionsCount}/${currentLevel.max + 1} миссий`;
+        
+        // Обновить прозрачность маркеров уровней
+        document.getElementById('marker0').style.opacity = missionsCount >= 0 ? '1' : '0.3';
+        document.getElementById('marker25').style.opacity = missionsCount >= 25 ? '1' : '0.3';
+        document.getElementById('marker50').style.opacity = missionsCount >= 50 ? '1' : '0.3';
+        document.getElementById('marker75').style.opacity = missionsCount >= 75 ? '1' : '0.3';
+        document.getElementById('marker100').style.opacity = missionsCount >= 100 ? '1' : '0.3';
+
+        document.getElementById('profileProgressNext').textContent = 
+          currentLevel.next 
+            ? `До ${currentLevel.next}: ${remaining} миссий` 
+            : 'Максимальный уровень!';
+      } catch (e) {
+        console.error('Ошибка загрузки профиля:', e);
+      }
+    }
+
+
+    // === МАГИЯ: Переменные ===
+    let selectedWorld = null;
+    let magicImageUrl = null;
+
+    // === МАГИЯ: Показать вкладку ===
+    function showMagicTab() {
+      document.getElementById('magicSection').style.display = 'block';
+      resetMagic();
+    }
+
+    // === МАГИЯ: Выбор мира ===
+    function selectWorld(world) {
+      selectedWorld = world;
+      
+      // Снять выделение со всех карточек
+      document.querySelectorAll('.magic-world-card').forEach(card => {
+        card.style.border = '3px solid transparent';
+        card.style.transform = 'scale(1)';
+      });
+      
+      // Выделить выбранную карточку
+      const selectedCard = document.getElementById(`world-${world}`);
+      selectedCard.style.border = '3px solid #FFD700';
+      selectedCard.style.transform = 'scale(1.05)';
+      
+      // Активировать кнопку генерации
+      const button = document.getElementById('generateButton');
+      button.disabled = false;
+      button.style.background = 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)';
+      button.style.cursor = 'pointer';
+    }
+
+    // === МАГИЯ: Генерация аватара ===
+    async function generateMagic() {
+      if (!selectedWorld) {
+        alert('Выбери игровой мир!');
+        return;
+      }
+      
+      // Скрыть селектор, показать загрузку
+      document.getElementById('magicWorldSelector').style.display = 'none';
+      document.getElementById('magicLoading').style.display = 'block';
+      
+      try {
+        // Вызов API генерации
+        const res = await fetch(`${API_URL}/api/magic/generate`, {
+          method: 'POST',
+          headers: {
+            'X-Invite-Code': currentCode,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            world: selectedWorld
+          })
+        });
+        
+        if (!res.ok) throw new Error('Ошибка генерации');
+        
+        const data = await res.json();
+        
+        // Сохранить URL изображения
+        magicImageUrl = data.image_url;
+        
+        // Показать результат
+        document.getElementById('magicLoading').style.display = 'none';
+        document.getElementById('magicResult').style.display = 'block';
+        document.getElementById('magicImage').src = magicImageUrl;
+        
+      } catch (e) {
+        alert('Ошибка при создании аватара: ' + e.message);
+        resetMagic();
+      }
+    }
+
+    // === МАГИЯ: Скачать изображение ===
+    function downloadMagicImage() {
+      if (!magicImageUrl) return;
+      
+      const link = document.createElement('a');
+      link.href = magicImageUrl;
+      link.download = `magic-avatar-${selectedWorld}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // === МАГИЯ: Поделиться ===
+    async function shareMagicImage() {
+      if (!magicImageUrl) return;
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Мой магический аватар',
+            text: `Я создал аватар в стиле ${selectedWorld}!`,
+            url: magicImageUrl
+          });
+        } catch (e) {
+          console.log('Отмена шаринга', e);
+        }
+      } else {
+        // Fallback: копировать URL
+        navigator.clipboard.writeText(magicImageUrl);
+        alert('Ссылка скопирована в буфер обмена!');
+      }
+    }
+
+    // === МАГИЯ: Установить как аватарку ===
+    async function setMagicAsAvatar() {
+      if (!magicImageUrl) return;
+      
+      try {
+        const res = await fetch(`${API_URL}/api/profile/set-avatar`, {
+          method: 'POST',
+          headers: {
+            'X-Invite-Code': currentCode,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            avatar_url: magicImageUrl
+          })
+        });
+        
+        if (!res.ok) throw new Error('Ошибка установки аватара');
+        
+        alert('✅ Аватар установлен!');
+        
+      } catch (e) {
+        alert('Ошибка: ' + e.message);
+      }
+    }
+
+    // === МАГИЯ: Сброс (создать ещё) ===
+    function resetMagic() {
+      selectedWorld = null;
+      magicImageUrl = null;
+      
+      // Скрыть результат и загрузку
+      document.getElementById('magicResult').style.display = 'none';
+      document.getElementById('magicLoading').style.display = 'none';
+      
+      // Показать селектор
+      document.getElementById('magicWorldSelector').style.display = 'block';
+      
+      // Сбросить выбор мира
+      document.querySelectorAll('.magic-world-card').forEach(card => {
+        card.style.border = '3px solid transparent';
+        card.style.transform = 'scale(1)';
+      });
+      
+      // Деактивировать кнопку
+      const button = document.getElementById('generateButton');
+      button.disabled = true;
+      button.style.background = '#666';
+      button.style.cursor = 'not-allowed';
+    }
+
+  </script>
+</body>
+</html>

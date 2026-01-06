@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Wallet — Родитель</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+    .header { background: linear-gradient(135deg, #40a33f 0%, #2d7a2d 100%); color: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .container { max-width: 600px; margin: 20px auto; padding: 20px; }
+    .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+    button { background: #40a33f; color: white; border: none; cursor: pointer; font-weight: bold; }
+    button:hover { background: #2d7a2d; }
+    .tabs { display: flex; background: white; border-radius: 10px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; }
+    .tab.active { border-bottom-color: #40a33f; font-weight: bold; color: #40a33f; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .child-card { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #40a33f; }
+    .task-card { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+    .task-title { font-weight: bold; margin-bottom: 5px; }
+    .task-reward { color: #40a33f; font-weight: bold; }
+    .hidden { display: none; }
+    .add-button { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #40a33f; color: white; border-radius: 50%; font-size: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
+    .add-button:hover { background: #2d7a2d; transform: scale(1.1); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>👨‍👩‍👧‍👦 Family Wallet — Родитель</h1>
+  </div>
+
+  <!-- Авторизация -->
+  <div id="authScreen" class="container">
+    <div class="card">
+      <h2>Авторизация</h2>
+      <input type="text" id="inviteCodeInput" placeholder="Введите инвайт-код" value="SRFK4A1C">
+      <button onclick="login()">Войти</button>
+    </div>
+  </div>
+
+  <!-- Главный экран -->
+  <div id="mainScreen" class="hidden">
+    <div class="container">
+      <div class="card">
+        <h2 id="welcomeText">Добро пожаловать!</h2>
+        <p>Валюта: <span id="currencySymbol">⭐</span></p>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('home')">Главная</div>
+        <div class="tab" onclick="switchTab('missions')">Миссии</div>
+        <div class="tab" onclick="switchTab('shop')">Магазин</div>
+        <div class="tab" onclick="switchTab('ai')">ИИ</div>
+      </div>
+
+      <!-- Вкладка Главная -->
+      <div id="homeTab" class="tab-content active">
+        <div class="card">
+          <h3>Мои дети</h3>
+          <div id="childrenList"></div>
+          <p id="noChildrenMessage" class="hidden">Добавьте детей, чтобы начать!</p>
+        </div>
+
+        <div class="card">
+          <h3>Задачи на проверке</h3>
+          <div id="pendingTasksList"></div>
+          <p id="noPendingMessage" class="hidden">Нет задач на проверке</p>
+        </div>
+
+        <div class="card">
+          <h3>История</h3>
+          <div id="historyList"></div>
+          <p id="noHistoryMessage" class="hidden">История пуста</p>
+        </div>
+      </div>
+
+      <!-- Вкладка Миссии -->
+      <div id="missionsTab" class="tab-content">
+        <div class="card">
+          <h3>Все миссии</h3>
+          <div id="allMissionsList"></div>
+          <p id="noMissionsMessage" class="hidden">Создайте первую миссию!</p>
+        </div>
+      </div>
+
+      <!-- Вкладка Магазин -->
+      <div id="shopTab" class="tab-content">
+        <div class="card">
+          <h3>Магазин призов</h3>
+          <p>Скоро...</p>
+        </div>
+      </div>
+
+      <!-- Вкладка ИИ -->
+      <div id="aiTab" class="tab-content">
+        <div class="card">
+          <h3>ИИ Помощник</h3>
+          <p>Скоро...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Кнопка добавления -->
+    <div class="add-button" onclick="showAddMenu()">+</div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://family-wallet-api.maltsevstas21.workers.dev';
+    let currentCode = '';
+    let familyId = '';
+
+    // ВАЖНО: Объявляем loadHistory() ДО login()
+    function loadHistory() {
+      fetch(`${API_BASE}/api/tasks/list`, {
+        headers: { 'X-Invite-Code': currentCode }
+      })
+      .then(r => r.json())
+      .then(data => {
+        const tasks = data.tasks || [];
+        const confirmed = tasks.filter(t => t.status === 'CONFIRMED');
+        const historyEl = document.getElementById('historyList');
+        const noHistoryEl = document.getElementById('noHistoryMessage');
+
+        if (confirmed.length === 0) {
+          historyEl.innerHTML = '';
+          noHistoryEl.classList.remove('hidden');
+        } else {
+          noHistoryEl.classList.add('hidden');
+          historyEl.innerHTML = confirmed.map(task => `
+            <div class="task-card">
+              <div class="task-title">${task.title} <small>(${task.child_name || 'Без имени'})</small></div>
+              <div>${task.description || ''}</div>
+              <div class="task-reward">+${task.reward_amount} ⭐</div>
+            </div>
+          `).join('');
+        }
+      })
+      .catch(err => console.error('Ошибка загрузки истории:', err));
+    }
+
+    function login() {
+      const code = document.getElementById('inviteCodeInput').value.trim();
+      if (!code) return alert('Введите инвайт-код!');
+
+      fetch(`${API_BASE}/api/auth/whoami`, {
+        headers: { 'X-Invite-Code': code }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.role === 'parent') {
+          currentCode = code;
+          familyId = data.family_id;
+          document.getElementById('welcomeText').textContent = `Добро пожаловать, ${data.family_name || 'Родитель'}!`;
+          document.getElementById('currencySymbol').textContent = data.currency?.symbol || '⭐';
+          document.getElementById('authScreen').classList.add('hidden');
+          document.getElementById('mainScreen').classList.remove('hidden');
+          loadChildren();
+          loadPendingTasks();
+          loadHistory();
+          loadAllMissions();
+          setInterval(() => {
+            loadChildren();
+            loadPendingTasks();
+            loadHistory();
+          }, 5000);
+        } else {
+          alert('Этот код для ребёнка!');
+        }
+      })
+      .catch(err => alert('Ошибка сети: ' + err.message));
+    }
+
+    function loadChildren() {
+      fetch(`${API_BASE}/api/children/list`, {
+        headers: { 'X-Invite-Code': currentCode }
+      })
+      .then(r => r.json())
+      .then(data => {
+        const children = data.children || [];
+        const listEl = document.getElementById('childrenList');
+        const noChildrenEl = document.getElementById('noChildrenMessage');
+
+        if (children.length === 0) {
+          listEl.innerHTML = '';
+          noChildrenEl.classList.remove('hidden');
+        } else {
+          noChildrenEl.classList.add('hidden');
+          listEl.innerHTML = children.map(child => `
+            <div class="child-card">
+              <strong>${child.name}</strong> (${child.age} лет, ${child.role})
+              <br>Баланс: ${child.balance} ⭐ | В ожидании: ${child.pending_balance} ⭐
+              <br><small>Код: ${child.invite_code}</small>
+            </div>
+          `).join('');
+        }
+      })
+      .catch(err => console.error('Ошибка загрузки детей:', err));
+    }
+
+    function loadPendingTasks() {
+      fetch(`${API_BASE}/api/tasks/list`, {
+        headers: { 'X-Invite-Code': currentCode }
+      })
+      .then(r => r.json())
+      .then(data => {
+        const tasks = data.tasks || [];
+        const pending = tasks.filter(t => t.status === 'PENDING');
+        const listEl = document.getElementById('pendingTasksList');
+        const noPendingEl = document.getElementById('noPendingMessage');
+
+        if (pending.length === 0) {
+          listEl.innerHTML = '';
+          noPendingEl.classList.remove('hidden');
+        } else {
+          noPendingEl.classList.add('hidden');
+          listEl.innerHTML = pending.map(task => `
+            <div class="task-card">
+              <div class="task-title">${task.title} <small>(${task.child_name || 'Без имени'})</small></div>
+              <div>${task.description || ''}</div>
+              <div class="task-reward">+${task.reward_amount} ⭐</div>
+              <button onclick="confirmTask('${task.id}', 'confirm')">✅ Подтвердить</button>
+              <button onclick="confirmTask('${task.id}', 'reject')" style="background:#ff4444">❌ Отклонить</button>
+            </div>
+          `).join('');
+        }
+      })
+      .catch(err => console.error('Ошибка загрузки задач на проверке:', err));
+    }
+
+    function loadAllMissions() {
+      fetch(`${API_BASE}/api/tasks/list`, {
+        headers: { 'X-Invite-Code': currentCode }
+      })
+      .then(r => r.json())
+      .then(data => {
+        const tasks = data.tasks || [];
+        const listEl = document.getElementById('allMissionsList');
+        const noMissionsEl = document.getElementById('noMissionsMessage');
+
+        if (tasks.length === 0) {
+          listEl.innerHTML = '';
+          noMissionsEl.classList.remove('hidden');
+        } else {
+          noMissionsEl.classList.add('hidden');
+          listEl.innerHTML = tasks.map(task => `
+            <div class="task-card">
+              <div class="task-title">${task.title} <small>(${task.child_name || 'Без имени'})</small></div>
+              <div>${task.description || ''}</div>
+              <div class="task-reward">+${task.reward_amount} ⭐ | Статус: ${task.status}</div>
+              <button onclick="deleteTask('${task.id}')" style="background:#ff4444">🗑️ Удалить</button>
+            </div>
+          `).join('');
+        }
+      })
+      .catch(err => console.error('Ошибка загрузки всех миссий:', err));
+    }
+
+    function confirmTask(taskId, action) {
+      fetch(`${API_BASE}/api/tasks/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Invite-Code': currentCode },
+        body: JSON.stringify({ task_id: taskId, action })
+      })
+      .then(r => r.json())
+      .then(data => {
+        alert(data.message || 'Задача обработана');
+        loadChildren();
+        loadPendingTasks();
+        loadHistory();
+        loadAllMissions();
+      })
+      .catch(err => alert('Ошибка: ' + err.message));
+    }
+
+    function deleteTask(taskId) {
+      if (!confirm('Удалить задачу?')) return;
+      fetch(`${API_BASE}/api/tasks/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-Invite-Code': currentCode },
+        body: JSON.stringify({ task_id: taskId })
+      })
+      .then(r => r.json())
+      .then(data => {
+        alert(data.message || 'Задача удалена');
+        loadAllMissions();
+      })
+      .catch(err => alert('Ошибка: ' + err.message));
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      if (tab === 'home') {
+        document.querySelector('.tabs .tab:nth-child(1)').classList.add('active');
+        document.getElementById('homeTab').classList.add('active');
+      } else if (tab === 'missions') {
+        document.querySelector('.tabs .tab:nth-child(2)').classList.add('active');
+        document.getElementById('missionsTab').classList.add('active');
+      } else if (tab === 'shop') {
+        document.querySelector('.tabs .tab:nth-child(3)').classList.add('active');
+        document.getElementById('shopTab').classList.add('active');
+      } else if (tab === 'ai') {
+        document.querySelector('.tabs .tab:nth-child(4)').classList.add('active');
+        document.getElementById('aiTab').classList.add('active');
+      }
+    }
+
+    function showAddMenu() {
+      const choice = prompt('Что добавить?\n1 - Ребёнка\n2 - Миссию\n\nВведите номер:');
+      if (choice === '1') addChild();
+      else if (choice === '2') addTask();
+    }
+
+    function addChild() {
+      const name = prompt('Имя ребёнка:');
+      if (!name) return;
+      const role = prompt('Роль (например: Сын/Дочка):');
+      const age = prompt('Возраст:');
+
+      fetch(`${API_BASE}/api/children/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Invite-Code': currentCode },
+        body: JSON.stringify({ name, role, age: parseInt(age) })
+      })
+      .then(r => r.json())
+      .then(data => {
+        alert(`Ребёнок добавлен!\nКод: ${data.child?.invite_code}`);
+        loadChildren();
+      })
+      .catch(err => alert('Ошибка: ' + err.message));
+    }
+
+    function addTask() {
+      fetch(`${API_BASE}/api/children/list`, {
+        headers: { 'X-Invite-Code': currentCode }
+      })
+      .then(r => r.json())
+      .then(data => {
+        const children = data.children || [];
+        if (children.length === 0) return alert('Сначала добавьте детей!');
+
+        const childList = children.map((c, i) => `${i+1}. ${c.name}`).join('\n');
+        const childIndex = prompt(`Выберите ребёнка:\n${childList}\n\nВведите номер:`) - 1;
+        
+        if (childIndex < 0 || childIndex >= children.length) return;
+        
+        const selectedChild = children[childIndex];
+        const title = prompt('Название задачи:');
+        if (!title) return;
+        const description = prompt('Описание (необязательно):') || '';
+        const reward = prompt('Награда (⭐):');
+
+        fetch(`${API_BASE}/api/tasks/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Invite-Code': currentCode },
+          body: JSON.stringify({
+            child_id: selectedChild.id,
+            title,
+            description,
+            reward_amount: parseInt(reward),
+            recurring: null,
+            recurring_days: null
+          })
+        })
+        .then(r => r.json())
+        .then(data => {
+          alert(data.message || 'Задача создана!');
+          loadAllMissions();
+        })
+        .catch(err => alert('Ошибка: ' + err.message));
+      });
+    }
+  </script>
+</body>
+</html>

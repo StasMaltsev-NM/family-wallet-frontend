@@ -1,0 +1,20 @@
+# Environment variables
+.env
+backend/.env
+
+# Backups and archives
+*.zip
+*.tar.gz
+BACKUP-*/
+_dump/
+
+# Old versions
+parent_new/
+parent_v2/
+FINAL-FIXED/
+KEEP-COMPLETED/
+SPA-*/
+
+# Build artifacts
+node_modules/
+.DS_Store

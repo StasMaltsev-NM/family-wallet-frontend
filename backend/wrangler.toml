@@ -1,0 +1,11 @@
+name = "family-wallet-api"
+main = "worker.js"
+compatibility_date = "2025-01-05"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "family-wallet-db"
+database_id = "6b5cea6e-ab4b-4577-b53c-bdac71bdd1d6"
+
+[ai]
+binding = "AI"

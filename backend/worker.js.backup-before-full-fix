@@ -1,0 +1,80 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Invite-Code',
+};
+
+const json = (data, status = 200) => new Response(JSON.stringify(data), { 
+  status, headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+});
+
+export default {
+  async fetch(request, env) {
+    if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+    
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const inviteCode = request.headers.get('X-Invite-Code');
+
+    try {
+      // --- АВТОРИЗАЦИЯ ---
+      if (path === '/api/auth/whoami') {
+        const family = await env.DB.prepare('SELECT * FROM families WHERE invite_code = ?').bind(inviteCode).first();
+        if (family) return json({ role: 'parent', family_id: family.id, family_name: family.name });
+        
+        const child = await env.DB.prepare('SELECT * FROM children WHERE invite_code = ?').bind(inviteCode).first();
+        if (child) return json({ role: 'child', ...child });
+        
+        return json({ error: 'Неверный код' }, 403);
+      }
+
+      // --- МАГИЯ (ТРАНСФОРМАЦИЯ) ---
+      if (path === '/api/magic/transform' && request.method === 'POST') {
+        const { image, style } = await request.json();
+        const stylePrompts = {
+          'roblox': 'roblox 3d avatar style, blocky, high quality',
+          'ghibli': 'studio ghibli style, anime, soft colors',
+          'anime': 'high quality anime style, sharp lines',
+          'minecraft': 'minecraft voxel blocky style'
+        };
+        
+        const base64Data = image.includes(',') ? image.split(',')[1] : image;
+        const binaryString = atob(base64Data);
+        const uint8Array = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) uint8Array[i] = binaryString.charCodeAt(i);
+
+        const aiResponse = await env.AI.run('@cf/bytedance/stable-diffusion-xl-lightning', {
+          prompt: stylePrompts[style] || 'anime style',
+          image: [...uint8Array],
+          strength: 0.6
+        });
+
+        return new Response(aiResponse, { headers: { ...corsHeaders, 'Content-Type': 'image/png' } });
+      }
+
+      // --- ЗАДАЧИ (TASKS) ---
+      if (path === '/api/tasks/list') {
+        const { results } = await env.DB.prepare('SELECT * FROM tasks WHERE family_id = (SELECT family_id FROM children WHERE invite_code = ?) OR family_id = (SELECT id FROM families WHERE invite_code = ?)').bind(inviteCode, inviteCode).all();
+        return json({ tasks: results || [] });
+      }
+
+      // --- ДЕТИ (CHILDREN) ---
+      if (path === '/api/children/list') {
+        const family = await env.DB.prepare('SELECT id FROM families WHERE invite_code = ?').bind(inviteCode).first();
+        const { results } = await env.DB.prepare('SELECT * FROM children WHERE family_id = ?').bind(family.id).all();
+        return json({ children: results || [] });
+      }
+
+      // --- НАГРАДЫ (REWARDS) ---
+      if (path === '/api/rewards/list') {
+        const { results } = await env.DB.prepare('SELECT * FROM rewards WHERE family_id = (SELECT family_id FROM children WHERE invite_code = ?) OR family_id = (SELECT id FROM families WHERE invite_code = ?)').bind(inviteCode, inviteCode).all();
+        return json({ rewards: results || [] });
+      }
+
+      return json({ error: 'Путь не найден' }, 404);
+
+    } catch (e) {
+      return json({ error: e.message }, 500);
+    }
+  }
+};

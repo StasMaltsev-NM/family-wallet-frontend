@@ -1,0 +1,107 @@
+
+    // ============================
+    // МАГАЗИН НАГРАД
+    // ============================
+
+    function toggleAddRewardForm() {
+      const form = document.getElementById('addRewardForm');
+      form.style.display = form.style.display === 'block' ? 'none' : 'block';
+      if (form.style.display === 'block') {
+        document.getElementById('rewardTitle').value = '';
+        document.getElementById('rewardDescription').value = '';
+        document.getElementById('rewardPrice').value = '';
+        document.getElementById('rewardIsPermanent').checked = false;
+      }
+    }
+
+    async function loadRewards() {
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const data = await res.json();
+        if (!Array.isArray(data.rewards)) {
+          document.getElementById('rewardsList').innerHTML = '<p class="error">Ошибка загрузки наград</p>';
+          return;
+        }
+        const rewardsList = document.getElementById('rewardsList');
+        if (data.rewards.length === 0) {
+          rewardsList.innerHTML = '<div class="empty-state">Наград пока нет. Нажмите \'+\' чтобы добавить.</div>';
+          return;
+        }
+        rewardsList.innerHTML = data.rewards.map(reward => `
+          <div class="task-item" style="position: relative;">
+            <button class="delete-button" onclick="deleteReward('${reward.id}')">✕</button>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 32px;">${reward.icon || '🎁'}</span>
+              <div style="flex: 1;">
+                <strong>${reward.title}</strong>
+                <div style="font-size: 14px; color: #666;">${reward.description || ''}</div>
+                <div style="margin-top: 5px;">
+                  <span style="font-weight: bold; color: #4CAF50;">${reward.price} ⭐</span>
+                  ${reward.is_permanent ? '<span style="margin-left: 10px; font-size: 12px; color: #999;">📌 Постоянный</span>' : '<span style="margin-left: 10px; font-size: 12px; color: #999;">🔄 Разовый</span>'}
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('rewardsList').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function createReward() {
+      const title = document.getElementById('rewardTitle').value.trim();
+      const description = document.getElementById('rewardDescription').value.trim();
+      const price = parseInt(document.getElementById('rewardPrice').value);
+      const isPermanent = document.getElementById('rewardIsPermanent').checked;
+      if (!title) {
+        alert('Введите название награды');
+        return;
+      }
+      if (!price || price < 1 || price > 10000) {
+        alert('Цена должна быть от 1 до 10000');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ title, description, price, is_permanent: isPermanent })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Ошибка: ' + data.error);
+          return;
+        }
+        toggleAddRewardForm();
+        loadRewards();
+      } catch (err) {
+        alert('Ошибка создания награды: ' + err.message);
+      }
+    }
+
+    async function deleteReward(rewardId) {
+      if (!confirm('Удалить эту награду?')) return;
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ reward_id: rewardId })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Ошибка: ' + data.error);
+          return;
+        }
+        loadRewards();
+      } catch (err) {
+        alert('Ошибка удаления награды: ' + err.message);
+      }
+    }

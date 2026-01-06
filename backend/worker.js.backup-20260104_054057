@@ -1,0 +1,433 @@
+// ============================
+// FAMILY WALLET — WORKER API
+// Cloudflare Worker для мультисемейной архитектуры
+// ============================
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Invite-Code',
+    };
+
+    // OPTIONS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    // Helper: JSON response
+    const json = (data, status = 200) => {
+      return new Response(JSON.stringify(data), {
+        status,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    };
+
+    // Helper: Error response
+    const error = (message, code = 'ERROR', status = 400) => {
+      return json({ error: message, code }, status);
+    };
+
+    try {
+      // ============================
+      // AUTH: Идентификация пользователя
+      // ============================
+      
+      // GET /api/auth/whoami
+      if (path === '/api/auth/whoami' && request.method === 'GET') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        
+        if (!inviteCode) {
+          return error('Отсутствует заголовок X-Invite-Code', 'NO_AUTH', 401);
+        }
+
+        // Проверяем родителя
+        const family = await env.DB.prepare(
+          'SELECT id, name, currency_name, currency_symbol FROM families WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (family) {
+          return json({
+            role: 'parent',
+            family_id: family.id,
+            family_name: family.name,
+            currency: {
+              name: family.currency_name,
+              symbol: family.currency_symbol
+            }
+          });
+        }
+
+        // Проверяем ребёнка
+        const child = await env.DB.prepare(
+          'SELECT c.id, c.family_id, c.name, c.role, c.age, c.balance, c.pending_balance, f.currency_name, f.currency_symbol FROM children c JOIN families f ON c.family_id = f.id WHERE c.invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (child) {
+          return json({
+            role: 'child',
+            family_id: child.family_id,
+            child_id: child.id,
+            name: child.name,
+            age: child.age,
+            balance: child.balance,
+            pending_balance: child.pending_balance,
+            currency: {
+              name: child.currency_name,
+              symbol: child.currency_symbol
+            }
+          });
+        }
+
+        return error('Неверный код приглашения', 'INVALID_CODE', 403);
+      }
+
+      // ============================
+      // TASKS: Задачи
+      // ============================
+
+      // GET /api/tasks/list
+      if (path === '/api/tasks/list' && request.method === 'GET') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        if (!inviteCode) return error('Требуется авторизация', 'NO_AUTH', 401);
+
+        // Определяем роль
+        const child = await env.DB.prepare(
+          'SELECT id, family_id FROM children WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        const family = await env.DB.prepare(
+          'SELECT id FROM families WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        let query;
+        if (child) {
+          // Ребёнок видит только свои задачи
+          query = env.DB.prepare(
+            "SELECT t.*, c.name AS child_name FROM tasks t LEFT JOIN children c ON c.id = t.child_id WHERE t.family_id = ? AND (t.child_id = ? OR t.child_id IS NULL) AND t.status != 'ARCHIVED' ORDER BY t.created_at DESC"
+          ).bind(child.family_id, child.id);
+        } else if (family) {
+          // Родитель видит все задачи семьи
+          query = env.DB.prepare(
+            "SELECT t.*, c.name AS child_name FROM tasks t LEFT JOIN children c ON c.id = t.child_id WHERE t.family_id = ? AND t.status != 'ARCHIVED' ORDER BY t.created_at DESC"
+          ).bind(family.id);
+        } else {
+          return error('Неверный код доступа', 'INVALID_CODE', 403);
+        }
+
+        const result = await query.all();
+        return json({ tasks: result.results || [] });
+      }
+
+      // POST /api/tasks/complete
+      if (path === '/api/tasks/complete' && request.method === 'POST') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        if (!inviteCode) return error('Требуется авторизация', 'NO_AUTH', 401);
+
+        const body = await request.json();
+        const { task_id } = body;
+
+        if (!task_id) return error('Отсутствует task_id', 'INVALID_INPUT');
+
+        // Проверяем ребёнка
+        const child = await env.DB.prepare(
+          'SELECT id, family_id, balance, pending_balance FROM children WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!child) {
+          return error('Только дети могут выполнять задачи', 'FORBIDDEN', 403);
+        }
+
+        // Проверяем задачу (идемпотентность + проверка что задача для этого ребёнка)
+        const task = await env.DB.prepare(
+          'SELECT * FROM tasks WHERE id = ? AND family_id = ? AND (child_id = ? OR child_id IS NULL)'
+        ).bind(task_id, child.family_id, child.id).first();
+
+        if (!task) {
+          return error('Задача не найдена', 'NOT_FOUND', 404);
+        }
+
+        if (task.status === 'WAITING') {
+          // Уже отправлена на проверку
+          return json({ message: 'Задача уже отправлена на проверку', status: 'PENDING' });
+        }
+
+        if (task.status === 'CONFIRMED') {
+          // Уже подтверждена
+          return json({ message: 'Задача уже выполнена', status: 'CONFIRMED' });
+        }
+
+        // Обновляем статус задачи + pending_balance ребёнка
+        await env.DB.prepare(
+          "UPDATE tasks SET status = 'WAITING', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        ).bind(task_id).run();
+
+        await env.DB.prepare(
+          'UPDATE children SET pending_balance = pending_balance + ? WHERE id = ?'
+        ).bind(task.reward_amount, child.id).run();
+
+        return json({ 
+          message: 'Задача отправлена на проверку',
+          status: 'WAITING',
+          pending_reward: task.reward_amount
+        });
+      }
+
+      // POST /api/tasks/confirm (родитель подтверждает)
+      if (path === '/api/tasks/confirm' && request.method === 'POST') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        if (!inviteCode) return error('Требуется авторизация', 'NO_AUTH', 401);
+
+        const body = await request.json();
+        const { task_id, action } = body;
+
+        if (!task_id || !action) {
+          return error('Отсутствует task_id или action', 'INVALID_INPUT');
+        }
+
+        // Проверяем родителя
+        const family = await env.DB.prepare(
+          'SELECT id FROM families WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!family) {
+          return error('Только родители могут подтверждать задачи', 'FORBIDDEN', 403);
+        }
+
+        // Проверяем задачу (идемпотентность)
+        const task = await env.DB.prepare(
+          'SELECT * FROM tasks WHERE id = ? AND family_id = ?'
+        ).bind(task_id, family.id).first();
+
+        if (!task) {
+          return error('Задача не найдена', 'NOT_FOUND', 404);
+        }
+
+        if (task.status === 'CONFIRMED' || task.status === 'REJECTED') {
+          return json({ message: 'Задача уже обработана', status: task.status });
+        }
+
+        if (task.status !== 'WAITING') {
+          return error('Задача не ожидает подтверждения', 'INVALID_STATUS');
+        }
+
+        // Получаем ребёнка
+        const child = await env.DB.prepare(
+          'SELECT id, balance, pending_balance FROM children WHERE id = ? AND family_id = ?'
+        ).bind(task.child_id, family.id).first();
+
+        if (!child) {
+          return error('Ребёнок не найден', 'NOT_FOUND', 404);
+        }
+
+        if (action === 'confirm') {
+          const newBalance = child.balance + task.reward_amount;
+          const newPending = child.pending_balance - task.reward_amount;
+
+          await env.DB.prepare(
+            'UPDATE children SET balance = ?, pending_balance = ? WHERE id = ?'
+          ).bind(newBalance, newPending, child.id).run();
+
+          await env.DB.prepare(
+            "UPDATE tasks SET status = 'CONFIRMED', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+          ).bind(task_id).run();
+
+          await env.DB.prepare(
+            'INSERT INTO task_ledger (id, family_id, child_id, task_id, type, amount, balance_before, balance_after) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+          ).bind(
+            `ledger_${Date.now()}`,
+            family.id,
+            child.id,
+            task_id,
+            'TASK_CONFIRM',
+            task.reward_amount,
+            child.balance,
+            newBalance
+          ).run();
+
+          return json({ 
+            message: 'Задача подтверждена',
+            status: 'CONFIRMED',
+            new_balance: newBalance
+          });
+        } else if (action === 'reject') {
+          const newPending = child.pending_balance - task.reward_amount;
+
+          await env.DB.prepare(
+            'UPDATE children SET pending_balance = ? WHERE id = ?'
+          ).bind(newPending, child.id).run();
+
+          await env.DB.prepare(
+            "UPDATE tasks SET status = 'IDLE', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+          ).bind(task_id).run();
+
+          return json({ 
+            message: 'Задача отклонена',
+            status: 'REJECTED'
+          });
+        } else {
+          return error('Неверное действие (confirm/reject)', 'INVALID_ACTION');
+        }
+      }
+
+      // POST /api/tasks/create (родитель создаёт задачу)
+      if (path === '/api/tasks/create' && request.method === 'POST') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        if (!inviteCode) return error('Требуется авторизация', 'NO_AUTH', 401);
+
+        const family = await env.DB.prepare(
+          'SELECT id FROM families WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!family) {
+          return error('Только родители могут создавать задачи', 'FORBIDDEN', 403);
+        }
+
+        const body = await request.json();
+        const { child_id, title, description, reward_amount, recurring, recurring_days } = body;
+
+        if (!child_id || !title || !reward_amount) {
+          return error('Отсутствуют обязательные поля: child_id, title, reward_amount', 'INVALID_INPUT');
+        }
+
+        const child = await env.DB.prepare(
+          'SELECT id FROM children WHERE id = ? AND family_id = ?'
+        ).bind(child_id, family.id).first();
+
+        if (!child) {
+          return error('Ребёнок не найден в этой семье', 'NOT_FOUND', 404);
+        }
+
+        const taskId = `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+        await env.DB.prepare(
+          'INSERT INTO tasks (id, family_id, child_id, title, description, reward_amount, recurring, recurring_days, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ).bind(
+          taskId,
+          family.id,
+          child_id,
+          title,
+          description || null,
+          parseInt(reward_amount),
+          recurring || null,
+          recurring_days || null,
+          'IDLE'
+        ).run();
+
+        return json({
+          message: 'Задача создана',
+          task: {
+            id: taskId,
+            title,
+            reward_amount: parseInt(reward_amount)
+          }
+        });
+      }
+
+      // DELETE /api/tasks/delete (родитель удаляет задачу)
+      if (path === '/api/tasks/delete' && request.method === 'DELETE') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        if (!inviteCode) return error('Требуется авторизация', 'NO_AUTH', 401);
+
+        const family = await env.DB.prepare(
+          'SELECT id FROM families WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!family) {
+          return error('Только родители могут удалять задачи', 'FORBIDDEN', 403);
+        }
+
+        const body = await request.json();
+        const { task_id } = body;
+
+        if (!task_id) {
+          return error('Отсутствует task_id', 'INVALID_INPUT');
+        }
+
+        const task = await env.DB.prepare(
+          'SELECT id FROM tasks WHERE id = ? AND family_id = ?'
+        ).bind(task_id, family.id).first();
+
+        if (!task) {
+          return error('Задача не найдена', 'NOT_FOUND', 404);
+        }
+
+        await env.DB.prepare(
+          "UPDATE tasks SET status = 'ARCHIVED', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        ).bind(task_id).run();
+
+        return json({ message: 'Задача удалена' });
+      }
+
+      // GET /api/children/list
+      if (path === '/api/children/list' && request.method === 'GET') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        if (!inviteCode) return error('Требуется авторизация', 'NO_AUTH', 401);
+
+        const family = await env.DB.prepare(
+          'SELECT id FROM families WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!family) {
+          return error('Только родители могут просматривать список детей', 'FORBIDDEN', 403);
+        }
+
+        const result = await env.DB.prepare(
+          'SELECT id, name, role, age, balance, pending_balance, invite_code, child_number FROM children WHERE family_id = ? ORDER BY child_number ASC'
+        ).bind(family.id).all();
+
+        return json({ children: result.results || [] });
+      }
+
+      // POST /api/children/add
+      if (path === '/api/children/add' && request.method === 'POST') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        if (!inviteCode) return error('Требуется авторизация', 'NO_AUTH', 401);
+
+        const family = await env.DB.prepare(
+          'SELECT id FROM families WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!family) {
+          return error('Только родители могут добавлять детей', 'FORBIDDEN', 403);
+        }
+
+        const body = await request.json();
+        const { name, role, age } = body;
+
+        if (!name || !role || !age) {
+          return error('Отсутствуют обязательные поля: name, role, age', 'INVALID_INPUT');
+        }
+
+        const childId = `child_${Date.now()}`;
+        const childInviteCode = `KID_${name.toUpperCase().replace(/[^A-Z0-9]/g, '')}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+        await env.DB.prepare(
+          'INSERT INTO children (id, family_id, name, role, age, invite_code, balance, pending_balance) VALUES (?, ?, ?, ?, ?, ?, 0, 0)'
+        ).bind(childId, family.id, name, role, parseInt(age), childInviteCode).run();
+
+        return json({
+          message: 'Ребёнок добавлен',
+          child: {
+            id: childId,
+            name,
+            role,
+            age: parseInt(age),
+            invite_code: childInviteCode
+          }
+        });
+      }
+
+      return error('Эндпоинт не найден', 'NOT_FOUND', 404);
+
+    } catch (err) {
+      console.error('Worker error:', err);
+      return error(`Внутренняя ошибка: ${err.message}`, 'INTERNAL_ERROR', 500);
+    }
+  },
+};

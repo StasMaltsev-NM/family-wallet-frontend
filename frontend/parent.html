@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Wallet — Родитель</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 0; margin: 0; max-width: 800px; margin: 0 auto; }
+    .section { margin: 20px; padding: 20px; border: 2px solid #ccc; position: relative; }
+    h1, h2 { margin-top: 0; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
+    .task-item, .child-item { padding: 15px; margin: 10px 0; border: 1px solid #ddd; background: #f9f9f9; position: relative; }
+    input, textarea, select { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+    .error { color: red; font-weight: bold; }
+    .success { color: green; font-weight: bold; }
+    .add-button { position: absolute; bottom: 80px; right: 20px; font-size: 32px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 50%; z-index: 1000; }
+    .delete-button { position: absolute; top: 10px; right: 10px; background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+    .form-popup { margin: 20px 0; padding: 15px; border: 2px dashed #999; background: #fafafa; display: none; }
+    .invite-code-display { font-size: 18px; font-weight: bold; padding: 15px; background: #ffffcc; border: 2px solid #ffcc00; margin: 10px 0; }
+    
+    /* Навигация */
+    .nav-tabs { display: flex; background: #333; margin: 0; padding: 0; }
+    .nav-tabs button { flex: 1; padding: 15px; background: #333; color: white; border: none; cursor: pointer; font-size: 16px; }
+    .nav-tabs button.active { background: #4CAF50; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .checkbox-group { margin: 10px 0; }
+    .checkbox-group label { display: block; margin: 5px 0; }
+    .empty-state { text-align: center; padding: 40px; color: #999; font-size: 18px; }
+    .history-item { padding: 10px; margin: 5px 0; background: #f9f9f9; border-left: 3px solid #4CAF50; }
+
+    .child-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .child-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+  
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .referrals-grid { display: grid; gap: 15px; margin-top: 20px; }
+    .ref-card { background: #f9f9f9; border: 1px solid #ddd; border-radius: 12px; padding: 15px; }
+    .ref-code { font-family: monospace; font-size: 20px; color: #24a1de; font-weight: bold; margin: 10px 0; }
+    .copy-btn { background: #24a1de; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+
+  </style>
+</head>
+<body>
+  
+  <div class="section">
+    <h2>Авторизация</h2>
+    <input type="text" id="inviteCode" placeholder="Введите код приглашения (SRFK4A1C)" value="SRFK4A1C">
+    <button onclick="login()">Войти</button>
+
+    <!-- ========================================= -->
+    <!-- ВЕРХНЯЯ ШАПКА (постоянная)                -->
+    <!-- ========================================= -->
+    <div id="topBar" style="display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      
+      <!-- Логотип -->
+      <div onclick="backToChildrenList()" style="font-size: 18px; font-weight: bold; cursor: pointer;">💰 Family Wallet</div>
+      
+      <!-- Список детей (аватарки) -->
+      <div id="childrenTabs" style="display: flex; gap: 10px; align-items: center;"></div>
+      
+      <!-- Иконки -->
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <button onclick="toggleAddChildForm()" style="background: #4CAF50; border: none; color: white; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" title="Добавить ребёнка">+</button>
+        <button onclick="alert('AI Помощник — в разработке')" style="background: none; border: none; font-size: 24px; cursor: pointer;">🎨</button>
+        <button onclick="alert('Настройки — в разработке')" style="background: none; border: none; font-size: 24px; cursor: pointer;">⚙️</button>
+      </div>
+    </div>
+
+    <div id="authStatus"></div>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+    <!-- Навигация -->
+    <div class="nav-tabs">
+      <button class="active" onclick="showTab('tab-home')">Главная</button>
+      <button onclick="showTab('tab-missions')">Миссии</button>
+      <button onclick="showTab('tab-shop')">Магазин</button>
+      <!-- <!-- <button onclick="showTab('tab-ai')">ИИ</button> (MVP: перенесено в профиль ребёнка) --> (Временно отключено) -->
+      <button onclick="showTab('tab-referrals')">Друзья</button>
+    </div>
+
+    <!-- Вкладка: Главная -->
+    <div id="tab-home" class="tab-content active">
+      <div class="section">
+        <h2 style="display: none;">Мои дети</h2>
+        <button class="add-button" onclick="toggleAddChildForm()" style="position: absolute; top: 20px; right: 20px; font-size: 24px; padding: 5px 15px; border-radius: 5px;">+</button>
+        
+        <div class="form-popup" id="addChildForm">
+          <h3>Добавить ребёнка</h3>
+          <input type="text" id="childName" placeholder="Имя">
+          <input type="text" id="childRole" placeholder="Роль (сын/дочь/ребёнок)">
+          <input type="number" id="childAge" placeholder="Возраст">
+          <textarea id="childAiDescription" placeholder="Постарайтесь подробнее описать ребёнка для рекомендаций от ИИ (необязательно)" rows="4" style="width: 100%; margin-top: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+          <button onclick="addChild()">Создать</button>
+          <button onclick="toggleAddChildForm()">Отмена</button>
+          <div id="addChildStatus"></div>
+        </div>
+        
+        <div id="childrenList" style="display: none;"></div>
+
+      <!-- Персональная страница ребёнка -->
+      <div id="childPersonalView" style="display:none;">
+
+        <div id="childPersonalHeader"></div>
+        
+                
+        <div id="childPersonalDream"></div>
+
+
+<div class="section">
+          <h2>🎯 Миссии</h2>
+          <div id="childPersonalTasks"></div>
+        </div>
+        
+        <div class="section">
+          <h2>🎁 Купленные награды</h2>
+          <div id="childPersonalRewards"></div>
+        </div>
+
+        <div class="section">
+        <h2>🤖 AI Помощник</h2>
+        
+        <!-- Быстрые действия -->
+        <div style="margin-bottom: 20px;">
+          <h3 style="margin-bottom: 15px; color: #333;">💡 Что я умею:</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <button onclick="generateChildAiReport('week')" style="padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">📊 Отчёт за неделю</button>
+            <button onclick="generateChildAiReport('month')" style="padding: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">📈 Отчёт за месяц</button>
+            <button onclick="generateChildAiIdeas('rewards')" style="padding: 15px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">🎁 Идеи наград</button>
+            <button onclick="generateChildAiIdeas('missions')" style="padding: 15px; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">🎯 Идеи миссий</button>
+            <button onclick="showChildAiQuestionForm()" style="padding: 15px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">💬 Задать вопрос</button>
+          </div>
+        </div>
+
+        <!-- Форма вопроса -->
+        <div id="childAiQuestionForm" style="display: none; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+          <h3>💬 Задайте вопрос</h3>
+          <textarea id="childAiQuestionInput" placeholder="Как мотивировать ребёнка?" rows="3" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 10px;"></textarea>
+          <button onclick="askChildAiQuestion()" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px;">Отправить</button>
+          <button onclick="hideAiQuestionForm()" style="padding: 12px 24px; background: #999; color: white; border: none; border-radius: 8px; cursor: pointer;">Отмена</button>
+        </div>
+
+        <!-- Результат -->
+        <div id="childAiResultContainer" style="display: none; margin-top: 20px;">
+          <div style="background: white; border-radius: 12px; padding: 20px;">
+            <h3 id="childAiResultTitle">📊 Результат</h3>
+            <div id="childAiLoadingIndicator" style="display: none; text-align: center; padding: 40px;">🤖 Анализирую...</div>
+            <div id="childAiResultContent" style="line-height: 1.8; white-space: pre-wrap;"></div>
+          </div>
+        </div>
+
+      </div>
+      </div>
+
+      </div>
+
+      <div class="section">
+        <h2>Задачи на проверке</h2>
+        <div id="pendingTasks"></div>
+      </div>
+    </div>
+
+
+      <div class="section">
+        <h2>🎁 Купленные награды детей</h2>
+        <div id="rewardPurchasesDashboard"></div>
+
+        <div id="activeDreamsContainer"></div>
+
+        <div id="pendingDreamsDashboard"></div>
+
+      </div>
+      <div class="section">
+        <h2>История</h2>
+        <div id="historyList"></div>
+      </div>
+
+    <!-- Вкладка: Миссии -->
+    <div id="tab-missions" class="tab-content">
+      <div class="section" style="min-height: 400px; position: relative;">
+        <h2>Миссии</h2>
+        <button class="add-button" onclick="toggleAddTaskForm()">+</button>
+        
+        <div class="form-popup" id="addTaskForm">
+          <h3>Создать миссию</h3>
+          <input type="text" id="taskTitle" placeholder="Название миссии*">
+          <textarea id="taskDescription" placeholder="Описание (опционально)" rows="3"></textarea>
+          <input type="number" id="taskReward" placeholder="Сумма (FAM)*">
+          
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" id="taskRecurring" onchange="toggleRecurringOptions()">
+              Повторяющаяся
+            </label>
+          </div>
+          
+          <div id="recurringOptions" style="display:none; margin-left: 20px;">
+            <select id="recurringType" onchange="toggleDaysSelection()">
+              <option value="">Выберите тип</option>
+              <option value="daily">Ежедневная</option>
+              <option value="weekends">По выходным</option>
+              <option value="custom">Выбрать дни недели</option>
+            </select>
+            
+            <div id="daysSelection" style="display:none; margin-top: 10px;">
+              <label><input type="checkbox" value="1"> Пн</label>
+              <label><input type="checkbox" value="2"> Вт</label>
+              <label><input type="checkbox" value="3"> Ср</label>
+              <label><input type="checkbox" value="4"> Чт</label>
+              <label><input type="checkbox" value="5"> Пт</label>
+              <label><input type="checkbox" value="6"> Сб</label>
+              <label><input type="checkbox" value="0"> Вс</label>
+            </div>
+          </div>
+          
+          <div class="checkbox-group">
+            <h4>Для кого миссия:</h4>
+            <div id="taskChildrenSelection"></div>
+          </div>
+          
+          <button onclick="createTask()">Создать миссию</button>
+          <button onclick="toggleAddTaskForm()">Отмена</button>
+          <div id="addTaskStatus"></div>
+        </div>
+        
+        <div id="tasksList"></div>
+      </div>
+    </div>
+
+    <!-- Вкладка: Магазин -->
+    <div id="tab-shop" class="tab-content">
+      <div class="section" style="min-height: 400px; position: relative;">
+        <h2>Магазин наград</h2>
+        <button class="add-button" onclick="toggleAddRewardForm()">+</button>
+        
+        <!-- Форма создания награды -->
+        <div class="form-popup" id="addRewardForm">
+          <input type="text" id="rewardTitle" placeholder="Название награды" />
+          <textarea id="rewardDescription" placeholder="Описание награды" rows="3"></textarea>
+          <input type="number" id="rewardPrice" placeholder="Цена (1-10000)" min="1" max="10000" />
+          <label style="display: flex; align-items: center; gap: 8px; margin: 10px 0;">
+            <input type="checkbox" id="rewardIsPermanent" />
+            <span>Постоянный слот (остаётся после покупки)</span>
+          </label>
+          <button onclick="createReward()">Создать награду</button>
+          <button onclick="toggleAddRewardForm()">Отмена</button>
+        </div>
+
+        <!-- Список наград -->
+        <div id="rewardsList"></div>
+      </div>
+    </div>
+    </div>
+
+    
+    <div id="tab-referrals" class="tab-content">
+      <div class="section">
+        <h2>👥 Пригласить друзей</h2>
+        <p>У вас есть 3 приглашения для других семей.</p>
+        <div id="referralsList" class="referrals-grid">
+          <p>Загрузка кодов...</p>
+        </div>
+      </div>
+    </div>
+  <script>
+    const API_URL = 'https://family-wallet-api.maltsevstas21.workers.dev';
+    let currentCode = '';
+    let familyId = '';
+    let childrenData = [];
+
+    // ========================================
+    // ГЛОБАЛЬНЫЙ КОНТЕКСТ РЕБЁНКА
+    // ========================================
+    let selectedChildId = null;
+
+    // Восстановить selectedChildId при загрузке
+    function restoreSelectedChild() {
+      selectedChildId = localStorage.getItem("selectedChildId");
+      console.log("Восстановлен selectedChildId:", selectedChildId);
+    }
+
+    // Переключение ребёнка
+    function switchChild(childId) {
+      console.log("Переключение на ребёнка:", childId);
+      selectedChildId = childId;
+      localStorage.setItem("selectedChildId", childId);
+      
+      // Обновить верхнюю шапку (подсветить активного)
+      renderTopBar();
+      
+      // Показать профиль выбранного ребёнка
+      showChildPersonalView(childId);
+    }
+
+    // ========================================
+    // ОТРИСОВКА ВЕРХНЕЙ ШАПКИ (список детей)
+    // ========================================
+    function renderTopBar() {
+      const container = document.getElementById('childrenTabs');
+      if (!container) return;
+
+      if (!childrenData || childrenData.length === 0) {
+        container.innerHTML = '<p style="color: white; font-size: 14px;">Нет детей</p>';
+        return;
+      }
+
+      container.innerHTML = childrenData.map(child => `
+        <div onclick="switchChild('${child.id}')" 
+             style="cursor: pointer; text-align: center; padding: 8px; border-radius: 8px; 
+                    background: ${selectedChildId === child.id ? 'rgba(255,255,255,0.3)' : 'transparent'}; 
+                    transition: all 0.3s;">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: #fff; 
+                      display: flex; align-items: center; justify-content: center; 
+                      font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+            👶
+          </div>
+          <div style="font-size: 12px; margin-top: 4px; color: white;">${child.name}</div>
+        </div>
+      `).join('');
+    }
+
+
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+      
+      if (tabId === 'tab-referrals') loadReferrals();
+      if (tabId === 'tab-missions') {
+        loadAllTasks();
+      }
+    }
+
+    function toggleRecurringOptions() {
+      const isChecked = document.getElementById('taskRecurring').checked;
+      document.getElementById('recurringOptions').style.display = isChecked ? 'block' : 'none';
+    }
+
+    function toggleDaysSelection() {
+      const type = document.getElementById('recurringType').value;
+      document.getElementById('daysSelection').style.display = type === 'custom' ? 'block' : 'none';
+    }
+
+    function toggleAddChildForm() {
+      const form = document.getElementById('addChildForm');
+      const isClosing = form.style.display !== 'none';
+      
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      
+      if (form.style.display === 'block') {
+        // Открытие формы - очистка полей
+        document.getElementById('childName').value = '';
+        document.getElementById('childRole').value = '';
+        document.getElementById('childAge').value = '';
+        document.getElementById('childAiDescription').value = '';
+        document.getElementById('addChildStatus').innerHTML = '';
+        
+        // Сброс режима редактирования
+        editingChildId = null;
+        document.querySelector('#addChildForm h3').textContent = 'Добавить ребёнка';
+        const submitBtn = document.querySelector('#addChildForm button[onclick*="Child"]');
+        if (submitBtn) {
+          submitBtn.textContent = 'Создать';
+          submitBtn.setAttribute('onclick', 'addChild()');
+        }
+      } else if (isClosing) {
+        // Закрытие формы - сброс режима редактирования
+        editingChildId = null;
+        document.querySelector('#addChildForm h3').textContent = 'Добавить ребёнка';
+        const submitBtn = document.querySelector('#addChildForm button[onclick*="Child"]');
+        if (submitBtn) {
+          submitBtn.textContent = 'Создать';
+          submitBtn.setAttribute('onclick', 'addChild()');
+        }
+      }
+    }
+
+    function toggleAddTaskForm() {
+      const form = document.getElementById('addTaskForm');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      if (form.style.display === 'block') {
+        document.getElementById('taskTitle').value = '';
+        document.getElementById('taskDescription').value = '';
+        document.getElementById('taskReward').value = '';
+        document.getElementById('taskRecurring').checked = false;
+        document.getElementById('addTaskStatus').innerHTML = '';
+        toggleRecurringOptions();
+        updateChildrenSelection();
+      }
+    }
+
+    function updateChildrenSelection() {
+      const container = document.getElementById('taskChildrenSelection');
+      if (childrenData.length === 0) {
+        container.innerHTML = '<p class="error">Сначала добавьте детей</p>';
+        return;
+      }
+      
+      container.innerHTML = childrenData.map(child => `
+        <label>
+          <input type="checkbox" class="child-checkbox" value="${child.id}">
+          ${child.name} (${child.role}, ${child.age} лет)
+        </label>
+      `).join('');
+    }
+
+    async function createTask() {
+      const title = document.getElementById('taskTitle').value.trim();
+      const description = document.getElementById('taskDescription').value.trim();
+      const reward = document.getElementById('taskReward').value.trim();
+      const isRecurring = document.getElementById('taskRecurring').checked;
+      
+      if (!title || !reward) {
+        document.getElementById('addTaskStatus').innerHTML = '<p class="error">Заполните обязательные поля (название и сумма)</p>';
+        return;
+      }
+
+      const selectedChildren = Array.from(document.querySelectorAll('.child-checkbox:checked')).map(cb => cb.value);
+      
+      if (selectedChildren.length === 0) {
+        document.getElementById('addTaskStatus').innerHTML = '<p class="error">Выберите хотя бы одного ребёнка</p>';
+        return;
+      }
+
+      let recurring = null;
+      let recurringDays = null;
+
+      if (isRecurring) {
+        const recurringType = document.getElementById('recurringType').value;
+        if (!recurringType) {
+          document.getElementById('addTaskStatus').innerHTML = '<p class="error">Выберите тип повторения</p>';
+          return;
+        }
+
+        if (recurringType === 'daily') {
+          recurring = 'daily';
+        } else if (recurringType === 'weekends') {
+          recurring = 'weekends';
+        } else if (recurringType === 'custom') {
+          const selectedDays = Array.from(document.querySelectorAll('#daysSelection input:checked')).map(cb => cb.value);
+          if (selectedDays.length === 0) {
+            document.getElementById('addTaskStatus').innerHTML = '<p class="error">Выберите дни недели</p>';
+            return;
+          }
+          recurring = 'custom';
+          recurringDays = JSON.stringify(selectedDays);
+        }
+      }
+
+      try {
+        // Создаём задачу для каждого выбранного ребёнка
+        for (const childId of selectedChildren) {
+          const res = await fetch(`${API_URL}/api/tasks/create`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Invite-Code': currentCode
+            },
+            body: JSON.stringify({
+              child_id: childId,
+              title,
+              description,
+              reward_amount: parseInt(reward),
+              recurring,
+              recurring_days: recurringDays
+            })
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            document.getElementById('addTaskStatus').innerHTML = `<p class="error">Ошибка: ${data.error}</p>`;
+            return;
+          }
+        }
+
+        document.getElementById('addTaskStatus').innerHTML = '<p class="success">✅ Миссия создана!</p>';
+        setTimeout(() => {
+          toggleAddTaskForm();
+          loadAllTasks();
+        }, 1500);
+
+      } catch (err) {
+        document.getElementById('addTaskStatus').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function loadAllTasks() {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+
+        const data = await res.json();
+        
+        if (!Array.isArray(data.tasks)) {
+          document.getElementById('tasksList').innerHTML = '<p class="error">Ошибка загрузки задач</p>';
+          return;
+        }
+
+        if (data.tasks.length === 0) {
+          document.getElementById('tasksList').innerHTML = '<p>Миссий пока нет. Нажмите "+" чтобы создать.</p>';
+          return;
+        }
+
+        document.getElementById('tasksList').innerHTML = data.tasks.map(task => `
+          <div class="task-item">
+            <button class="delete-button" onclick="deleteTask('${task.id}')">✕</button>
+            <strong>${task.title}</strong> — ${task.reward_amount} ⭐<br>
+            ${task.description || ''}<br>
+            <small>Статус: ${task.status} ${task.recurring ? '(повторяющаяся: ' + task.recurring + ')' : ''}</small>
+            ${task.status === 'WAITING' ? '<br><button onclick="confirmTask(\''+task.id+'\', \'confirm\')">✅ Подтвердить</button> <button onclick="confirmTask(\''+task.id+'\', \'reject\')">❌ Отклонить</button>' : ''}
+          </div>
+        `).join('');
+
+      } catch (err) {
+        document.getElementById('tasksList').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function deleteTask(taskId) {
+      
+
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ task_id: taskId })
+        });
+
+        const data = await res.json();
+        
+        if (!res.ok) {
+          alert('Ошибка: ' + data.error);
+          return;
+        }
+
+        loadAllTasks();
+
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    }
+
+    async function addChild() {
+      const name = document.getElementById('childName').value.trim();
+      const role = document.getElementById('childRole').value.trim();
+      const age = document.getElementById('childAge').value.trim();
+      const ai_description = document.getElementById('childAiDescription').value.trim();
+
+      if (!name || !role || !age) {
+        document.getElementById('addChildStatus').innerHTML = '<p class="error">Заполните все поля</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/api/children/add`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ name, role, age: parseInt(age), ai_description: ai_description || null })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('addChildStatus').innerHTML = `<p class="error">Ошибка: ${data.error}</p>`;
+          return;
+        }
+
+        document.getElementById('addChildStatus').innerHTML = `
+          <p class="success">✅ ${data.message}</p>
+          <div class="invite-code-display">
+            КОД РЕБЁНКА: ${data.child.invite_code}
+            <br><button onclick="copyToClipboard('${data.child.invite_code}')">📋 Скопировать</button>
+          </div>
+          <p><strong>Отправьте этот код ребёнку для входа в детское приложение</strong></p>
+        `;
+
+        loadChildren();
+        renderTopBar();
+
+        document.getElementById('childName').value = '';
+        document.getElementById('childRole').value = '';
+        document.getElementById('childAge').value = '';
+        document.getElementById('childAiDescription').value = '';
+
+      } catch (err) {
+        document.getElementById('addChildStatus').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    // Редактирование ребёнка
+    let editingChildId = null;
+
+    function editChild(childId) {
+      editingChildId = childId;
+      
+      // Найти ребёнка в данных
+      const child = childrenData.find(c => c.id === childId);
+      if (!child) return;
+
+      // Заполнить форму существующими данными
+      document.getElementById('childName').value = child.name;
+      document.getElementById('childRole').value = child.role;
+      document.getElementById('childAge').value = child.age;
+      document.getElementById('childAiDescription').value = child.ai_description || '';
+
+      // Показать форму
+      document.getElementById('addChildForm').style.display = 'flex';
+
+      // Изменить текст кнопки
+      const submitBtn = document.querySelector('#addChildForm button[onclick="addChild()"]');
+      submitBtn.textContent = '💾 Сохранить изменения';
+      submitBtn.setAttribute('onclick', 'saveChildEdit()');
+
+      // Изменить заголовок
+      document.querySelector('#addChildForm h3').textContent = '✏️ Редактировать ребёнка';
+    }
+
+    async function saveChildEdit() {
+      const name = document.getElementById('childName').value.trim();
+      const role = document.getElementById('childRole').value.trim();
+      const age = document.getElementById('childAge').value.trim();
+      const ai_description = document.getElementById('childAiDescription').value.trim();
+
+      if (!name || !role || !age) {
+        document.getElementById('addChildStatus').innerHTML = '<p class="error">Заполните все обязательные поля</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/api/children/edit/${editingChildId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ name, role, age: parseInt(age), ai_description: ai_description || null })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          document.getElementById('addChildStatus').innerHTML = `<p class="error">Ошибка: ${data.error}</p>`;
+          return;
+        }
+
+        document.getElementById('addChildStatus').innerHTML = '<p class="success">✅ Изменения сохранены!</p>';
+
+        // Перезагрузить список детей
+        await loadChildren();
+        renderTopBar();
+
+        // Закрыть форму через 1 секунду
+        setTimeout(() => {
+          toggleAddChildForm();
+        }, 1000);
+
+      } catch (err) {
+        document.getElementById('addChildStatus').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Код скопирован в буфер обмена!');
+      }).catch(() => {
+        alert('Не удалось скопировать. Перепишите код вручную.');
+      });
+    }
+    async function loadHistory() {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const data = await res.json();
+        if (!Array.isArray(data.tasks)) return;
+        const completed = data.tasks.filter(t => t.status === 'CONFIRMED').slice(0, 10);
+        if (completed.length === 0) {
+          document.getElementById('historyList').innerHTML = '<div class="empty-state">История пуста</div>';
+          return;
+        }
+        document.getElementById('historyList').innerHTML = completed.map(task => `
+          <div class="history-item">✅ ${task.title} — +${task.reward_amount} ⭐</div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('historyList').innerHTML = `<p class="error">Ошибка загрузки истории</p>`;
+      }
+    }
+
+
+
+    async function login() {
+      const code = document.getElementById('inviteCode').value.trim();
+      if (!code) {
+        document.getElementById('authStatus').innerHTML = '<p class="error">Введите код приглашения</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/api/auth/whoami`, {
+          headers: { 'X-Invite-Code': code }
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          document.getElementById('authStatus').innerHTML = `<p class="error">Ошибка: ${err.error}</p>`;
+          return;
+        }
+
+        const data = await res.json();
+        
+        if (data.role !== 'parent') {
+          document.getElementById('authStatus').innerHTML = '<p class="error">Этот код для ребёнка. Используйте родительский код.</p>';
+          return;
+        }
+
+        currentCode = code;
+        familyId = data.family_id;
+        
+        document.getElementById('authStatus').innerHTML = `<p class="success">✅ Добро пожаловать, ${data.family_name}!</p>`;
+        document.getElementById('mainApp').style.display = 'block';
+
+        loadChildren();
+        renderTopBar();
+        loadPendingTasks();
+        loadPendingRewardPurchases();
+        loadPendingDreams();
+        loadHistory();
+        loadActiveDreams();
+
+      } catch (err) {
+        document.getElementById('authStatus').innerHTML = `<p class="error">Ошибка сети: ${err.message}</p>`;
+      }
+    }
+
+    async function loadChildren() {
+      try {
+        const res = await fetch(`${API_URL}/api/children/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+
+        const data = await res.json();
+        
+        if (!Array.isArray(data.children)) {
+          document.getElementById('childrenList').innerHTML = '<p class="error">Ошибка загрузки детей</p>';
+          return;
+        }
+
+        childrenData = data.children;
+
+        if (data.children.length === 0) {
+          document.getElementById('childrenList').innerHTML = '<p>Детей пока нет. Нажмите "+" чтобы добавить.</p>';
+          return;
+        }
+
+        document.getElementById('childrenList').innerHTML = data.children.map(child => `
+          <div class="child-item child-card" style="position: relative; padding-left: 50px;">
+            <button onclick="event.stopPropagation(); editChild('${child.id}')" style="position: absolute; top: 15px; left: 15px; background: #4CAF50; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;">✏️</button>
+            <div onclick="showChildPersonalView('${child.id}')" style="cursor: pointer;">
+              <strong>${child.name}</strong> (${child.role}, ${child.age} лет)<br>
+              Баланс: ${child.balance} ⭐ | На проверке: ${child.pending_balance} ⭐<br>
+              Код ребёнка: <code>${child.invite_code}</code>
+              ${child.ai_description ? `<div style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 3px solid #4CAF50; border-radius: 4px; font-size: 13px; color: #333;">✨ ${child.ai_description}</div>` : '<div style="margin-top: 8px; color: #999; font-size: 13px; font-style: italic;">✨ AI-профиль не настроен</div>'}
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        document.getElementById('childrenList').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+
+    // ============================
+    // ПЕРСОНАЛЬНАЯ СТРАНИЦА РЕБЁНКА
+    // ============================
+    
+
+    function showChildPersonalView(childId) {
+      selectedChildId = childId;
+      
+      // Скрываем общий view
+      document.getElementById('childrenList').style.display = 'none';
+      document.getElementById('pendingTasks').parentElement.style.display = 'none';
+      document.getElementById('rewardPurchasesDashboard').style.display = 'none';
+      document.getElementById('historyList').parentElement.style.display = 'none';
+      
+      // Показываем персональный view
+      document.getElementById('childPersonalView').style.display = 'block';
+      
+      loadChildPersonalData(childId);
+    }
+
+    function backToChildrenList() {
+      selectedChildId = null;
+      
+      // Показываем общий view
+      document.getElementById('childrenList').style.display = 'block';
+      document.getElementById('pendingTasks').parentElement.style.display = 'block';
+      document.getElementById('rewardPurchasesDashboard').style.display = 'block';
+      document.getElementById('historyList').parentElement.style.display = 'block';
+      
+      // Скрываем персональный view
+      document.getElementById('childPersonalView').style.display = 'none';
+    }
+
+    async function loadChildPersonalData(childId) {
+      try {
+        // Загружаем данные ребёнка
+        const childRes = await fetch(`${API_URL}/api/children/${childId}`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!childRes.ok) throw new Error('Ошибка загрузки данных ребёнка');
+        
+        const childData = await childRes.json();
+        const child = childData.child;
+        
+        // Отображаем заголовок
+        document.getElementById('childPersonalHeader').innerHTML = `
+          <div style="padding: 20px; background: #f0f0f0; border-radius: 8px; margin-bottom: 20px;">
+            <h2>${child.name} (${child.role}, ${child.age} лет)</h2>
+            <div style="font-size: 24px; font-weight: bold; margin-top: 10px;">
+              Баланс: ${child.balance} ⭐ | На проверке: ${child.pending_balance} ⭐
+            </div>
+            <div style="color: #666; margin-top: 5px;">
+              Код ребёнка: ${child.invite_code}
+            </div>
+          </div>
+        `;
+        
+        // Загружаем миссии ребёнка
+        await loadChildPersonalTasks(childId);
+        
+        // Загружаем награды ребёнка
+        await loadChildPersonalRewards(childId);
+        
+        // Загружаем мечту ребёнка
+        await loadChildPersonalDream(childId);
+        
+        // Обновляем pending мечты на главной
+        await loadPendingDreams();
+        
+      } catch (err) {
+        alert(`Ошибка: ${err.message}`);
+        backToChildrenList();
+      }
+    }
+
+    async function loadChildPersonalTasks(childId) {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки миссий');
+        
+        const data = await res.json();
+        const childTasks = (data.tasks || []).filter(t => t.child_id === childId && t.status !== 'ARCHIVED');
+        
+        const list = document.getElementById('childPersonalTasks');
+        
+        if (childTasks.length === 0) {
+          list.innerHTML = '<div class="empty-state">Нет миссий</div>';
+          return;
+        }
+        
+        const idleTasks = childTasks.filter(t => t.status === 'IDLE');
+        const waitingTasks = childTasks.filter(t => t.status === 'WAITING');
+        
+        let html = '';
+        
+        if (idleTasks.length > 0) {
+          html += '<h3>📋 Назначенные миссии</h3>';
+          html += idleTasks.map(t => `
+            <div class="task-item status-${t.status}">
+              <span style="font-size: 24px; margin-right: 10px;">${t.icon}</span>
+              <strong>${t.title}</strong><br>
+              ${t.description || ''}<br>
+              Награда: <strong>${t.reward_amount} ⭐</strong>
+            </div>
+          `).join('');
+        }
+        
+        if (waitingTasks.length > 0) {
+          html += '<h3 style="margin-top: 20px;">⏳ На проверке</h3>';
+          html += waitingTasks.map(t => `
+            <div class="task-item status-${t.status}">
+              <span style="font-size: 24px; margin-right: 10px;">${t.icon}</span>
+              <strong>${t.title}</strong><br>
+              ${t.description || ''}<br>
+              Награда: <strong>${t.reward_amount} ⭐</strong><br>
+              <button onclick="handleTaskAction('${t.id}', 'confirm')" style="background: #4CAF50; color: white; margin-top: 10px;">
+                ✅ Подтвердить
+              </button>
+              <button onclick="handleTaskAction('${t.id}', 'reject')" style="background: #f44336; color: white; margin-top: 10px;">
+                ❌ Отклонить
+              </button>
+            </div>
+          `).join('');
+        }
+        
+        list.innerHTML = html;
+        
+      } catch (err) {
+        document.getElementById('childPersonalTasks').innerHTML = 
+          `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function loadChildPersonalRewards(childId) {
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/purchases/family`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки наград');
+        
+        const data = await res.json();
+        const childRewards = (data.purchases || []).filter(p => p.child_id === childId && p.status === 'pending');
+        
+        const list = document.getElementById('childPersonalRewards');
+        
+        if (childRewards.length === 0) {
+          list.innerHTML = '<div class="empty-state">Нет купленных наград</div>';
+          return;
+        }
+        
+        list.innerHTML = childRewards.map(p => `
+          <div style="padding: 15px; margin: 10px 0; border: 2px solid #FF9800; background: #fff8e1; border-radius: 8px;">
+            <span style="font-size: 32px; margin-right: 10px;">${p.reward_icon}</span>
+            <strong>${p.reward_title}</strong> за <strong>${p.price} ⭐</strong>
+            <div style="color: #666; font-size: 14px; margin-top: 5px;">
+              ${new Date(p.purchased_at).toLocaleString('ru-RU')}
+            </div>
+            <div style="color: #FF9800; font-weight: bold; margin-top: 5px;">
+              ⏳ Ожидает выдачи
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (err) {
+        document.getElementById('childPersonalRewards').innerHTML = 
+          `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+
+    // === AI ФУНКЦИИ ДЛЯ ПРОФИЛЯ РЕБЁНКА ===
+    
+    window.showChildAiQuestionForm = function() {
+      document.getElementById('childAiQuestionForm').style.display = 'block';
+      document.getElementById('childAiQuestionInput').focus();
+    }
+    
+    window.hideChildAiQuestionForm = function() {
+      document.getElementById('childAiQuestionForm').style.display = 'none';
+      document.getElementById('childAiQuestionInput').value = '';
+    }
+    
+    function showChildAiResult(title, content) {
+      document.getElementById('childAiResultTitle').textContent = title;
+      document.getElementById('childAiResultContent').innerHTML = content;
+      document.getElementById('childAiResultContainer').style.display = 'block';
+    }
+    
+    function hideChildAiResult() {
+      document.getElementById('childAiResultContainer').style.display = 'none';
+    }
+    
+    function copyChildAiResult() {
+      const content = document.getElementById('childAiResultContent').innerText;
+      navigator.clipboard.writeText(content).then(() => {
+        alert('✅ Результат скопирован!');
+      }).catch(() => {
+        alert('❌ Не удалось скопировать');
+      });
+    }
+    
+    window.generateChildAiReport = async function(period) {
+      if (!selectedChildId) {
+        alert('❌ Ошибка: ребёнок не выбран');
+        return;
+      }
+      
+      const title = period === 'week' ? '📊 Отчёт за неделю' : '📈 Отчёт за месяц';
+      
+      document.getElementById('childAiLoadingIndicator').style.display = 'block';
+      showChildAiResult(title, '');
+      
+      try {
+        const res = await fetch(`${API_URL}/api/ai-assistant/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({
+            type: 'report',
+            period: period,
+            child_id: selectedChildId
+          })
+        });
+        
+        const data = await res.json();
+        
+        document.getElementById('childAiLoadingIndicator').style.display = 'none';
+        
+        if (!res.ok) {
+          showChildAiResult(title, `❌ Ошибка: ${data.error || 'Неизвестная ошибка'}`);
+          return;
+        }
+        
+        showChildAiResult(title, data.result.replace(/\n/g, '<br>'));
+        
+      } catch (err) {
+        document.getElementById('childAiLoadingIndicator').style.display = 'none';
+        showChildAiResult(title, `❌ Ошибка: ${err.message}`);
+      }
+    }
+    
+    window.generateChildAiIdeas = async function(ideaType) {
+      if (!selectedChildId) {
+        alert('❌ Ошибка: ребёнок не выбран');
+        return;
+      }
+      
+      const title = ideaType === 'rewards' ? '🎁 Идеи наград' : '🎯 Идеи миссий';
+      
+      document.getElementById('childAiLoadingIndicator').style.display = 'block';
+      showChildAiResult(title, '');
+      
+      try {
+        const res = await fetch(`${API_URL}/api/ai-assistant/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({
+            type: 'ideas',
+            ideaType: ideaType,
+            child_id: selectedChildId
+          })
+        });
+        
+        const data = await res.json();
+        
+        document.getElementById('childAiLoadingIndicator').style.display = 'none';
+        
+        if (!res.ok) {
+          showChildAiResult(title, `❌ Ошибка: ${data.error || 'Неизвестная ошибка'}`);
+          return;
+        }
+        
+        showChildAiResult(title, data.result.replace(/\n/g, '<br>'));
+        
+      } catch (err) {
+        document.getElementById('childAiLoadingIndicator').style.display = 'none';
+        showChildAiResult(title, `❌ Ошибка: ${err.message}`);
+      }
+    }
+    
+    window.askChildAiQuestion = async function() {
+      if (!selectedChildId) {
+        alert('❌ Ошибка: ребёнок не выбран');
+        return;
+      }
+      
+      const question = document.getElementById('childAiQuestionInput').value.trim();
+      
+      if (!question) {
+        alert('❌ Введите вопрос');
+        return;
+      }
+      
+      hideChildAiQuestionForm();
+      
+      const title = '💬 Ответ на вопрос';
+      
+      document.getElementById('childAiLoadingIndicator').style.display = 'block';
+      showChildAiResult(title, '');
+      
+      try {
+        const res = await fetch(`${API_URL}/api/ai-assistant/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({
+            type: 'question',
+            question: question,
+            child_id: selectedChildId
+          })
+        });
+        
+        const data = await res.json();
+        
+        document.getElementById('childAiLoadingIndicator').style.display = 'none';
+        
+        if (!res.ok) {
+          showChildAiResult(title, `❌ Ошибка: ${data.error || 'Неизвестная ошибка'}`);
+          return;
+        }
+        
+        showChildAiResult(title, data.result.replace(/\n/g, '<br>'));
+        
+      } catch (err) {
+        document.getElementById('childAiLoadingIndicator').style.display = 'none';
+        showChildAiResult(title, `❌ Ошибка: ${err.message}`);
+      }
+    }
+
+    }
+
+
+
+    // ============================
+    // МЕЧТЫ ДЕТЕЙ (РОДИТЕЛЬ)
+    // ============================
+
+    async function loadPendingDreams() {
+      // Проверяем все input'ы с именами dreamGoal_*
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.id && activeElement.id.startsWith('dreamGoal_')) {
+        console.log('Пропускаем обновление - пользователь вводит сумму');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_URL}/api/dreams/pending`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки мечт');
+        
+        const data = await res.json();
+        const dashboard = document.getElementById('pendingDreamsDashboard');
+        
+        if (!data.dreams || data.dreams.length === 0) {
+          dashboard.innerHTML = '';
+          return;
+        }
+        
+        const html = `
+          <div style="margin: 20px 0;">
+            <h3>💭 Мечты детей (ожидают подтверждения)</h3>
+            ${data.dreams.map(d => `
+              <div class="dream-pending-item">
+                <strong>${d.child_name}</strong> создал(а) мечту:
+                <div style="font-size: 18px; font-weight: bold; margin: 10px 0;">
+                  🎯 "${d.title}"
+                </div>
+                <div class="dream-goal-form">
+                  <label>Цель:</label>
+                  <input type="number" id="dreamGoal_${d.id}" class="dream-goal-input" placeholder="Сумма" min="1" max="1000000">
+                  <span>⭐</span>
+                  <button class="dream-goal-button" onclick="setDreamGoal('${d.id}')">
+                    ✅ Установить
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+        dashboard.innerHTML = html;
+        
+      } catch (err) {
+        console.error('Ошибка загрузки pending мечт:', err);
+      }
+    }
+
+    async function setDreamGoal(dreamId) {
+      const input = document.getElementById(`dreamGoal_${dreamId}`);
+      const amount = parseInt(input.value);
+      
+      if (!amount || amount < 1 || amount > 1000000) {
+        alert('Введите сумму от 1 до 1000000');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_URL}/api/dreams/set-goal`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ dream_id: dreamId, target_amount: amount })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(`Ошибка: ${err.error}`);
+          return;
+        }
+        
+        const data = await res.json();
+        
+        loadPendingDreams();
+        loadActiveDreams();
+        
+        // Если мы на персональной странице ребёнка - обновляем её
+        if (selectedChildId) {
+          loadChildPersonalDream(selectedChildId);
+        }
+        
+      } catch (err) {
+        alert(`Ошибка: ${err.message}`);
+      }
+    }
+
+
+    async function loadActiveDreams() {
+      try {
+        const res = await fetch(`${API_URL}/api/dreams/active`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+
+        if (!res.ok) throw new Error('Ошибка загрузки мечт');
+
+        const data = await res.json();
+        const container = document.getElementById('activeDreamsContainer');
+
+        if (!data.dreams || data.dreams.length === 0) {
+          container.innerHTML = '';
+          return;
+        }
+
+        const html = data.dreams.map(dream => {
+          const progress = Math.min(100, Math.round((dream.current_amount / dream.target_amount) * 100));
+          return `
+            <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #0ea5e9;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="margin: 0;">🎯 ${dream.child_name}: ${dream.title}</h3>
+              </div>
+              <div style="background: #e0f2fe; height: 20px; border-radius: 10px; overflow: hidden; margin-bottom: 8px;">
+                <div style="background: linear-gradient(90deg, #0ea5e9, #06b6d4); height: 100%; width: ${progress}%; transition: width 0.3s;"></div>
+              </div>
+              <div style="text-align: center; font-size: 16px; font-weight: bold;">
+                ${dream.current_amount} / ${dream.target_amount} ⭐ (${progress}%)
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = html;
+
+      } catch (err) {
+        console.error('Ошибка загрузки активных мечт:', err);
+      }
+    }
+
+
+    async function loadChildPersonalDream(childId) {
+      try {
+        const res = await fetch(`${API_URL}/api/dreams/active`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки мечт');
+        
+        const data = await res.json();
+        const childDream = (data.dreams || []).find(d => d.child_id === childId);
+        
+        const container = document.getElementById('childPersonalDream');
+        
+        if (!childDream) {
+          container.innerHTML = '';
+          return;
+        }
+        
+        const progress = Math.min(100, Math.round((childDream.current_amount / childDream.target_amount) * 100));
+        
+        container.innerHTML = `
+          <div class="dream-active-item">
+            <h3>🎯 Мечта: ${childDream.title}</h3>
+            <div class="dream-progress-bar">
+              <div class="dream-progress-fill" style="width: ${progress}%"></div>
+            </div>
+            <div style="text-align: center; font-size: 18px; font-weight: bold;">
+              ${childDream.current_amount} / ${childDream.target_amount} ⭐
+            </div>
+            <div style="text-align: center; color: #666; margin-top: 5px;">
+              Прогресс: ${progress}%
+            </div>
+          </div>
+        `;
+        
+      } catch (err) {
+        console.error('Ошибка загрузки мечты ребёнка:', err);
+      }
+    }
+
+
+    // Загрузка купленных наград детей
+    async function loadPendingRewardPurchases() {
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/purchases/family`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        
+        if (!res.ok) throw new Error('Ошибка загрузки покупок');
+        
+        const data = await res.json();
+        const dashboard = document.getElementById('rewardPurchasesDashboard');
+        
+        if (!data.purchases || data.purchases.length === 0) {
+          dashboard.innerHTML = '';
+          return;
+        }
+        
+        const html = `
+          <div style="margin: 20px 0;">
+            <h3>🎁 Купленные награды детей</h3>
+            ${data.purchases.map(p => `
+              <div style="padding: 15px; margin: 10px 0; border: 2px solid #FF9800; background: #fff8e1; border-radius: 8px;">
+                <span style="font-size: 32px; margin-right: 10px;">${p.reward_icon}</span>
+                <strong>${p.child_name}</strong> купил(а):
+                <strong>${p.reward_title}</strong> за <strong>${p.price} ⭐</strong>
+                <div style="color: #666; font-size: 14px; margin-top: 5px;">
+                  ${new Date(p.purchased_at).toLocaleString('ru-RU')}
+                </div>
+                <div style="color: #FF9800; font-weight: bold; margin-top: 5px;">
+                  ⏳ Ожидает выдачи
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+        dashboard.innerHTML = html;
+        
+      } catch (err) {
+        console.error('Ошибка загрузки покупок:', err);
+      }
+    }
+
+    async function loadPendingTasks() {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+
+        const data = await res.json();
+        
+        if (!Array.isArray(data.tasks)) {
+          document.getElementById('pendingTasks').innerHTML = '<p class="error">Ошибка загрузки задач</p>';
+          return;
+        }
+
+        const pending = data.tasks.filter(t => t.status === 'WAITING');
+
+        if (pending.length === 0) {
+          document.getElementById('pendingTasks').innerHTML = '<p>Нет задач на проверке</p>';
+          return;
+        }
+
+        document.getElementById('pendingTasks').innerHTML = pending.map(task => `
+          <div class="task-item">
+            <strong>${task.title}</strong> — ${task.reward_amount} ⭐<br>
+            ${task.description || ''}<br>
+            <button onclick="confirmTask('${task.id}', 'confirm')">✅ Подтвердить</button>
+            <button onclick="confirmTask('${task.id}', 'reject')">❌ Отклонить</button>
+          </div>
+        `).join('');
+
+
+
+      } catch (err) {
+        document.getElementById('pendingTasks').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function confirmTask(taskId, action) {
+      try {
+        const res = await fetch(`${API_URL}/api/tasks/confirm`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ task_id: taskId, action })
+        });
+
+        const data = await res.json();
+        
+        
+        loadPendingTasks();
+        loadPendingRewardPurchases();
+        loadHistory();
+        loadChildren();
+        renderTopBar();
+
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    }
+
+    setInterval(() => {
+      if (currentCode) {
+        loadPendingTasks();
+        loadPendingRewardPurchases();
+        loadPendingDreams();
+        loadHistory();
+        loadChildren();
+        renderTopBar();
+      }
+    }, 5000);
+
+    // ============================
+    // МАГАЗИН НАГРАД
+    // ============================
+
+    function toggleAddRewardForm() {
+      const form = document.getElementById('addRewardForm');
+      form.style.display = form.style.display === 'block' ? 'none' : 'block';
+      if (form.style.display === 'block') {
+        document.getElementById('rewardTitle').value = '';
+        document.getElementById('rewardDescription').value = '';
+        document.getElementById('rewardPrice').value = '';
+        document.getElementById('rewardIsPermanent').checked = false;
+      }
+    }
+
+    async function loadRewards() {
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/list`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const data = await res.json();
+        if (!Array.isArray(data.rewards)) {
+          document.getElementById('rewardsList').innerHTML = '<p class="error">Ошибка загрузки наград</p>';
+          return;
+        }
+        const rewardsList = document.getElementById('rewardsList');
+        if (data.rewards.length === 0) {
+          rewardsList.innerHTML = '<div class="empty-state">Наград пока нет. Нажмите \'+\' чтобы добавить.</div>';
+          return;
+        }
+        rewardsList.innerHTML = data.rewards.map(reward => `
+          <div class="task-item" style="position: relative;">
+            <button class="delete-button" onclick="deleteReward('${reward.id}')">✕</button>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 32px;">${reward.icon || '🎁'}</span>
+              <div style="flex: 1;">
+                <strong>${reward.title}</strong>
+                <div style="font-size: 14px; color: #666;">${reward.description || ''}</div>
+                <div style="margin-top: 5px;">
+                  <span style="font-weight: bold; color: #4CAF50;">${reward.price} ⭐</span>
+                  ${reward.is_permanent ? '<span style="margin-left: 10px; font-size: 12px; color: #999;">📌 Постоянный</span>' : '<span style="margin-left: 10px; font-size: 12px; color: #999;">🔄 Разовый</span>'}
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('rewardsList').innerHTML = `<p class="error">Ошибка: ${err.message}</p>`;
+      }
+    }
+
+    async function createReward() {
+      const title = document.getElementById('rewardTitle').value.trim();
+      const description = document.getElementById('rewardDescription').value.trim();
+      const price = parseInt(document.getElementById('rewardPrice').value);
+      const isPermanent = document.getElementById('rewardIsPermanent').checked;
+      if (!title) {
+        alert('Введите название награды');
+        return;
+      }
+      if (!price || price < 1 || price > 10000) {
+        alert('Цена должна быть от 1 до 10000');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ title, description, price, is_permanent: isPermanent })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Ошибка: ' + data.error);
+          return;
+        }
+        toggleAddRewardForm();
+        loadRewards();
+      } catch (err) {
+        alert('Ошибка создания награды: ' + err.message);
+      }
+    }
+
+    async function deleteReward(rewardId) {
+      if (!confirm('Удалить эту награду?')) return;
+      try {
+        const res = await fetch(`${API_URL}/api/rewards/delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ reward_id: rewardId })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Ошибка: ' + data.error);
+          return;
+        }
+        loadRewards();
+      } catch (err) {
+        alert('Ошибка удаления награды: ' + err.message);
+      }
+    }
+
+  
+    async function loadReferrals() {
+      const container = document.getElementById('referralsList');
+      try {
+        const res = await fetch(`${API_URL}/api/referrals/my`, {
+          headers: { 'X-Invite-Code': currentCode }
+        });
+        const data = await res.json();
+        if (data.referrals) {
+          container.innerHTML = data.referrals.map(ref => `
+            <div class="ref-card">
+              <div style="font-size: 11px; color: #888;">${ref.used_by_family_id ? '✅ Использован: ' + (ref.used_by_name || 'Другая семья') : '🔓 Доступен'}</div>
+              <div class="ref-code">${ref.invite_code}</div>
+              ${ref.used_by_family_id ? '' : '<button class="copy-btn" onclick="copyText(\''+ref.invite_code+'\')">Копировать</button>'}
+            </div>
+          `).join('');
+        }
+      } catch (e) { container.innerHTML = 'Ошибка загрузки'; }
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text);
+      alert('Код скопирован!');
+    }
+
+    // ============================
+    // AI ПОМОЩНИК
+    // ============================
+
+    function showAiQuestionForm() {
+      document.getElementById('aiQuestionForm').style.display = 'block';
+      document.getElementById('aiQuestionInput').focus();
+    }
+
+    function hideAiQuestionForm() {
+      document.getElementById('aiQuestionForm').style.display = 'none';
+      document.getElementById('aiQuestionInput').value = '';
+    }
+
+    function showAiResult(title) {
+      document.getElementById('aiResultTitle').textContent = title;
+      document.getElementById('aiResultContainer').style.display = 'block';
+      document.getElementById('aiLoadingIndicator').style.display = 'block';
+      document.getElementById('aiResultContent').style.display = 'none';
+    }
+
+    function hideAiResult() {
+      document.getElementById('aiResultContainer').style.display = 'none';
+    }
+
+    async function generateAiReport(period) {
+      const title = period === 'week' ? '📊 Отчёт за неделю' : '📈 Отчёт за месяц';
+      showAiResult(title);
+
+      try {
+        const res = await fetch(`${API_URL}/api/ai-assistant/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ type: 'report', period: period })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка генерации');
+
+        document.getElementById('aiLoadingIndicator').style.display = 'none';
+        document.getElementById('aiResultContent').style.display = 'block';
+        document.getElementById('aiResultContent').textContent = data.result;
+      } catch (err) {
+        document.getElementById('aiLoadingIndicator').style.display = 'none';
+        document.getElementById('aiResultContent').style.display = 'block';
+        document.getElementById('aiResultContent').textContent = '❌ Ошибка: ' + err.message;
+      }
+    }
+
+    async function generateAiIdeas(ideaType) {
+      const title = ideaType === 'rewards' ? '🎁 Идеи наград' : '🎯 Идеи миссий';
+      showAiResult(title);
+
+      try {
+        const res = await fetch(`${API_URL}/api/ai-assistant/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ type: 'ideas', ideaType: ideaType })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка генерации');
+
+        document.getElementById('aiLoadingIndicator').style.display = 'none';
+        document.getElementById('aiResultContent').style.display = 'block';
+        document.getElementById('aiResultContent').textContent = data.result;
+      } catch (err) {
+        document.getElementById('aiLoadingIndicator').style.display = 'none';
+        document.getElementById('aiResultContent').style.display = 'block';
+        document.getElementById('aiResultContent').textContent = '❌ Ошибка: ' + err.message;
+      }
+    }
+
+    async function askAiQuestion() {
+      const question = document.getElementById('aiQuestionInput').value.trim();
+      if (!question) { alert('Введите вопрос'); return; }
+
+      hideAiQuestionForm();
+      showAiResult('💬 Ответ на вопрос');
+
+      try {
+        const res = await fetch(`${API_URL}/api/ai-assistant/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Invite-Code': currentCode
+          },
+          body: JSON.stringify({ type: 'question', question: question })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка генерации');
+
+        document.getElementById('aiLoadingIndicator').style.display = 'none';
+        document.getElementById('aiResultContent').style.display = 'block';
+        document.getElementById('aiResultContent').textContent = data.result;
+      } catch (err) {
+        document.getElementById('aiLoadingIndicator').style.display = 'none';
+        document.getElementById('aiResultContent').style.display = 'block';
+        document.getElementById('aiResultContent').textContent = '❌ Ошибка: ' + err.message;
+      }
+    }
+
+
+  </script>
+</body>
+</html>
