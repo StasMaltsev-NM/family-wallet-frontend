@@ -65,7 +65,7 @@
       <div style="display: flex; gap: 15px; align-items: center;">
         <button onclick="toggleAddChildForm()" style="background: #4CAF50; border: none; color: white; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" title="Добавить ребёнка">+</button>
         <button onclick="alert('AI Помощник — в разработке')" style="background: none; border: none; font-size: 24px; cursor: pointer;">🎨</button>
-        <button onclick="openSettingsModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">⚙️</button>
+        <button onclick="alert('Настройки — в разработке')" style="background: none; border: none; font-size: 24px; cursor: pointer;">⚙️</button>
       </div>
     </div>
 
@@ -79,6 +79,7 @@
       <button onclick="showTab('tab-missions')">Миссии</button>
       <button onclick="showTab('tab-shop')">Магазин</button>
       <!-- <!-- <button onclick="showTab('tab-ai')">ИИ</button> (MVP: перенесено в профиль ребёнка) --> (Временно отключено) -->
+      <button onclick="showTab('tab-referrals')">Друзья</button>
     </div>
 
     <!-- Вкладка: Главная -->
@@ -255,7 +256,15 @@
     </div>
 
     
-
+    <div id="tab-referrals" class="tab-content">
+      <div class="section">
+        <h2>👥 Пригласить друзей</h2>
+        <p>У вас есть 3 приглашения для других семей.</p>
+        <div id="referralsList" class="referrals-grid">
+          <p>Загрузка кодов...</p>
+        </div>
+      </div>
+    </div>
   <script>
     const API_URL = 'https://family-wallet-api.maltsevstas21.workers.dev';
     let currentCode = '';
@@ -322,6 +331,7 @@
       document.getElementById(tabId).classList.add('active');
       event.target.classList.add('active');
       
+      if (tabId === 'tab-referrals') loadReferrals();
       if (tabId === 'tab-missions') {
         loadAllTasks();
       }
@@ -1653,123 +1663,5 @@
 
 
   </script>
-
-  <!-- ========================================= -->
-  <!-- МОДАЛЬНОЕ ОКНО НАСТРОЙКИ                  -->
-  <!-- ========================================= -->
-  <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto;">
-    <div style="max-width: 600px; margin: 50px auto; background: white; border-radius: 16px; padding: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-      
-      <!-- Заголовок -->
-      <div style="padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0;">Коды доступа</h2>
-        <button onclick="closeSettingsModal()" style="background: none; border: none; font-size: 32px; cursor: pointer; color: #999;">&times;</button>
-      </div>
-      
-      <!-- Список кодов -->
-      <div id="referralsModalList" style="padding: 20px;">
-        <p>Загрузка кодов...</p>
-      </div>
-      
-      <!-- Настройки платформы -->
-      <div style="padding: 20px; border-top: 1px solid #ddd;">
-        <h3 style="color: #666; font-size: 14px; text-transform: uppercase; margin-bottom: 15px;">Настройки платформы</h3>
-        <button onclick="deleteParentProfile()" style="width: 100%; padding: 15px; background: #ff4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">Удалить профиль родителя</button>
-      </div>
-      
-      <!-- Добавить ребёнка -->
-      <div style="padding: 20px; border-top: 1px solid #ddd;">
-        <button onclick="closeSettingsModal(); toggleAddChildForm();" style="width: 100%; padding: 15px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">Добавить ребёнка</button>
-      </div>
-      
-    </div>
-  </div>
-
-  <script>
-    // Открыть модальное окно настроек
-    function openSettingsModal() {
-      document.getElementById('settingsModal').style.display = 'block';
-      loadReferralsModal();
-    }
-
-    // Закрыть модальное окно настроек
-    function closeSettingsModal() {
-      document.getElementById('settingsModal').style.display = 'none';
-    }
-
-    // Загрузить коды в модальное окно
-    async function loadReferralsModal() {
-      const container = document.getElementById('referralsModalList');
-      
-      try {
-        const res = await fetch(`${API_URL}/api/referrals/my`, {
-          headers: { 'X-Invite-Code': currentCode }
-        });
-
-        if (!res.ok) throw new Error('Ошибка загрузки кодов');
-
-        const data = await res.json();
-        const referrals = data.referrals || [];
-
-        if (referrals.length === 0) {
-          container.innerHTML = '<p style="text-align: center; color: #999;">Нет доступных кодов приглашения</p>';
-          return;
-        }
-
-        container.innerHTML = referrals.map(ref => `
-          <div style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-              <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 24px;">👥</div>
-              <div style="flex: 1;">
-                <strong>${ref.used_by_name || 'Не активирован'}</strong><br>
-                <code style="font-family: monospace; font-size: 16px; color: #24a1de; font-weight: bold;">${ref.invite_code}</code>
-                ${ref.used_by_name ? '<br><span style="color: #4CAF50; font-size: 12px;">✅ Активирован</span>' : '<br><span style="color: #999; font-size: 12px;">⏳ Ожидает активации</span>'}
-              </div>
-              <div style="display: flex; gap: 10px;">
-                <button onclick="copyToClipboard('${ref.invite_code}')" style="background: none; border: none; font-size: 24px; cursor: pointer;" title="Копировать">📋</button>
-                <button onclick="shareCode('${ref.invite_code}', 'Family Wallet')" style="background: none; border: none; font-size: 24px; cursor: pointer;" title="Поделиться">🔗</button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-
-      } catch (err) {
-        container.innerHTML = `<p style="color: red;">Ошибка: ${err.message}</p>`;
-      }
-    }
-
-    // Копировать в буфер обмена
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert('✅ Код скопирован: ' + text);
-      }).catch(err => {
-        alert('❌ Ошибка копирования: ' + err);
-      });
-    }
-
-    // Поделиться кодом
-    function shareCode(code, name) {
-      if (navigator.share) {
-        navigator.share({
-          title: `Family Wallet — Код для ${name}`,
-          text: `Присоединяйся к Family Wallet как ${name}! Код: ${code}`,
-          url: window.location.href
-        }).catch(err => console.log('Ошибка sharing:', err));
-      } else {
-        copyToClipboard(code);
-        alert(`Код для ${name} скопирован! Поделись им с семьёй.`);
-      }
-    }
-
-    // Удалить профиль родителя
-    function deleteParentProfile() {
-      if (confirm('⚠️ Вы уверены? Это удалит ВСЮ семью, всех детей, миссии и награды!')) {
-        if (confirm('⚠️ ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ! Отменить это действие будет НЕВОЗМОЖНО!')) {
-          alert('🚧 Функция удаления профиля будет реализована позже');
-        }
-      }
-    }
-  </script>
-
 </body>
 </html>
