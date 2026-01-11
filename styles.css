@@ -1,0 +1,205 @@
+    body { font-family: "Plus Jakarta Sans", Arial, sans-serif; padding: 0; margin: 0; max-width: 800px; margin: 0 auto; background: #000000; color: #FFFFFF; }
+    .section { margin: 20px; padding: 20px; background: #0F0E17; border: 1px solid #2D2B3F; border-radius: 16px; position: relative; }
+    h1, h2 { margin-top: 0; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
+    .task-item, .child-item { padding: 15px; margin: 10px 0; border: 1px solid #ddd; background: #f9f9f9; position: relative; }
+    input, textarea, select { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+    .error { color: red; font-weight: bold; }
+    .success { color: green; font-weight: bold; }
+    .add-button { position: absolute; bottom: 80px; right: 20px; font-size: 32px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 50%; z-index: 1000; }
+    .delete-button { position: absolute; top: 10px; right: 10px; background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+    /* Модальное окно */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .form-popup {
+      display: block;
+      padding: 0;
+      border: none;
+      background: transparent;
+    }
+    .invite-code-display { font-size: 18px; font-weight: bold; padding: 15px; background: #ffffcc; border: 2px solid #ffcc00; margin: 10px 0; }
+    
+    /* Навигация */
+    .nav-tabs { display: flex; background: #333; margin: 0; padding: 0; }
+    .nav-tabs button { flex: 1; padding: 15px; background: #333; color: white; border: none; cursor: pointer; font-size: 16px; }
+    .nav-tabs button.active { background: #4CAF50; }
+    .child-nav-btn { 
+      background: transparent; 
+      border: none; 
+      color: #666; 
+      cursor: pointer; 
+      padding: 8px 16px; 
+      border-radius: 16px; 
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+      text-align: center;
+    }
+    .child-nav-btn.active { 
+      background: rgba(167, 139, 250, 0.2); 
+      color: #A78BFA; 
+    }
+    .child-nav-btn:hover { 
+      background: rgba(167, 139, 250, 0.1); 
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .checkbox-group { margin: 10px 0; }
+    .checkbox-group label { display: block; margin: 5px 0; }
+    .empty-state { text-align: center; padding: 40px; color: #999; font-size: 18px; }
+    .history-item { padding: 10px; margin: 5px 0; background: #f9f9f9; border-left: 3px solid #4CAF50; }
+
+    .child-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .child-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+  
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .referrals-grid { display: grid; gap: 15px; margin-top: 20px; }
+    .ref-card { background: #f9f9f9; border: 1px solid #ddd; border-radius: 12px; padding: 15px; }
+    .ref-code { font-family: monospace; font-size: 20px; color: #24a1de; font-weight: bold; margin: 10px 0; }
+    .copy-btn { background: #24a1de; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+
+
+    /* Прогресс-бар мечты */
+    .dream-progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    
+    .dream-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A);
+      transition: width 0.3s ease;
+    }
+
+/* ========================================= */
+/* CHILD BOTTOM NAVIGATION                   */
+/* ========================================= */
+#childBottomNavigation {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none; /* Скрыто по умолчанию */
+  background: rgba(15, 14, 23, 0.85);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 24px;
+  padding: 8px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+}
+
+.child-nav-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.child-nav-btn.active {
+  background: rgba(167, 139, 250, 0.2);
+  color: #A78BFA;
+}
+
+.child-nav-btn:hover {
+  background: rgba(167, 139, 250, 0.1);
+  color: #A78BFA;
+}
+
+
+/* ========================================= */
+/* ЖЁЛТОЕ КОЛЬЦО УВЕДОМЛЕНИЙ (ПОВЕРХ ФИОЛЕТОВОГО) */
+/* ========================================= */
+.avatar-notification-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  border-radius: 50%;
+  border: 3px solid #F59E0B; /* Жёлтый/оранжевый */
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+  animation: pulse-notification 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 3; /* Поверх фиолетового кольца */
+}
+
+@keyframes pulse-notification {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+
+/* ========================================= */
+/* ЖЁЛТОЕ КОЛЬЦО УВЕДОМЛЕНИЙ (ПОВЕРХ ФИОЛЕТОВОГО) */
+/* ========================================= */
+.avatar-notification-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  border-radius: 50%;
+  border: 3px solid #F59E0B; /* Жёлтый/оранжевый */
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+  animation: pulse-notification 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 3; /* Поверх фиолетового кольца */
+}
+
+@keyframes pulse-notification {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+

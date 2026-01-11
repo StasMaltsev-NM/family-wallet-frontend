@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Wallet — Родитель</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  
+  <div class="section">
+    <h2>Авторизация</h2>
+    <input type="text" id="inviteCode" placeholder="Введите код приглашения (SRFK4A1C)" value="SRFK4A1C" style="background: #1a1a1a; border: 1px solid #2D2B3F; color: #FFFFFF; padding: 12px; border-radius: 8px; font-size: 16px;">
+    <button onclick="login()" style="background: linear-gradient(135deg, #A78BFA 0%, #818CF8 100%); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;">Войти</button>
+    
+    <!-- Уведомление о приватности -->
+    <div id="privacyNotice" style="text-align: center; margin-top: 20px; padding: 15px; background: #0F0E17; border: 1px solid #2D2B3F; border-radius: 12px; color: #A78BFA; font-size: 14px; line-height: 1.6;">
+      <div style="font-size: 20px; margin-bottom: 8px;">🔒</div>
+      <strong style="color: #FFFFFF;">Здесь безопасно</strong><br>
+      Мы не просим реальные имена и не собираем персональные данные.<br>
+      Все профили обезличены и принадлежат только вашей семье.
+    </div>
+
+    <!-- ========================================= -->
+    <!-- ВЕРХНЯЯ ШАПКА (постоянная)                -->
+    <!-- ========================================= -->
+    <div id="topBar" style="display: none; align-items: center; justify-content: space-between; padding: 15px 20px; background: transparent; color: white; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      
+      <!-- Логотип -->
+      <div id="logoContainer" style="font-size: 18px; font-weight: bold; cursor: default; color: #999; display: none;">💰 Family Wallet</div>
+      
+      <!-- Список детей (аватарки) -->
+      <div id="childrenTabs" style="display: flex; gap: 10px; align-items: center;"></div>
+      
+      <!-- Иконки -->
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <button onclick="toggleAddChildForm()" style="background: #4CAF50; border: none; color: white; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" title="Добавить ребёнка">+</button>
+        <button onclick="alert('AI Помощник — в разработке')" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer;">🎨</button>
+        <button onclick="openSettingsModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">⚙️</button>
+      </div>
+    </div>
+
+    <div id="authStatus"></div>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+    <!-- Навигация -->
+    <div class="nav-tabs">
+      <button class="active" onclick="showTab('tab-home')">Главная</button>
+      <button onclick="showTab('tab-missions')">Миссии</button>
+      <button onclick="showTab('tab-shop')">Магазин</button>
+      <button id="profileTabButton" onclick="showTab('tab-profile')" style="display: none;">Профиль</button>
+      <!-- <!-- <button onclick="showTab('tab-ai')">ИИ</button> (MVP: перенесено в профиль ребёнка) --> (Временно отключено) -->
+    </div>
+
+    <!-- Вкладка: Главная -->
+      <!-- Модальное окно для добавления ребёнка -->
+      <div id="addChildModal" class="modal-backdrop" >
+        <div class="modal-content">
+
+        <div class="form-popup" id="addChildForm">
+          <h3>Добавить ребёнка</h3>
+          <input type="text" id="childName" placeholder="Имя">
+          <input type="text" id="childRole" placeholder="Роль (сын/дочь/ребёнок)">
+          <input type="number" id="childAge" placeholder="Возраст">
+          <textarea id="childAiDescription" placeholder="Постарайтесь подробнее описать ребёнка для рекомендаций от ИИ (необязательно)" rows="4" style="width: 100%; margin-top: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+          <button onclick="addChild()">Создать</button>
+          <button onclick="toggleAddChildForm()">Отмена</button>
+          <div id="addChildStatus"></div>
+
+        </div>
+      </div>
+        </div>
+    <div id="tab-home" class="tab-content active">
+      <div class="section">
+        <h2 style="display: none;">Мои дети</h2>
+        
+        
+        <div id="childrenList" style="display: none;"></div>
+
+      <!-- Персональная страница ребёнка -->
+      <div id="childPersonalView" style="display:none;">
+
+        <div id="childPersonalHeader"></div>
+        
+                
+        <div id="childPersonalDream"></div>
+
+
+<div class="section">
+          <h2>🎯 Миссии</h2>
+          <div id="childPersonalTasks"></div>
+        </div>
+        
+        <div class="section">
+          <h2>🎁 Купленные награды</h2>
+          <div id="childPersonalRewards"></div>
+        </div>
+
+        <div class="section">
+        <h2>🤖 AI Помощник</h2>
+        
+        <!-- Быстрые действия -->
+        <div style="margin-bottom: 20px;">
+          <h3 style="margin-bottom: 15px; color: #333;">💡 Что я умею:</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <button onclick="generateChildAiReport('week')" style="padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">📊 Отчёт за неделю</button>
+            <button onclick="generateChildAiReport('month')" style="padding: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">📈 Отчёт за месяц</button>
+            <button onclick="generateChildAiIdeas('rewards')" style="padding: 15px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">🎁 Идеи наград</button>
+            <button onclick="generateChildAiIdeas('missions')" style="padding: 15px; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">🎯 Идеи миссий</button>
+            <button onclick="showChildAiQuestionForm()" style="padding: 15px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold;">💬 Задать вопрос</button>
+          </div>
+        </div>
+
+        <!-- Форма вопроса -->
+        <div id="childAiQuestionForm" style="display: none; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+          <h3>💬 Задайте вопрос</h3>
+          <textarea id="childAiQuestionInput" placeholder="Как мотивировать ребёнка?" rows="3" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 10px;"></textarea>
+          <button onclick="askChildAiQuestion()" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px;">Отправить</button>
+          <button onclick="hideAiQuestionForm()" style="padding: 12px 24px; background: #999; color: white; border: none; border-radius: 8px; cursor: pointer;">Отмена</button>
+        </div>
+
+        <!-- Результат -->
+        <div id="childAiResultContainer" style="display: none; margin-top: 20px;">
+          <div style="background: white; border-radius: 12px; padding: 20px;">
+            <h3 id="childAiResultTitle">📊 Результат</h3>
+            <div id="childAiLoadingIndicator" style="display: none; text-align: center; padding: 40px;">🤖 Анализирую...</div>
+            <div id="childAiResultContent" style="line-height: 1.8; white-space: pre-wrap;"></div>
+          </div>
+        </div>
+
+      </div>
+      </div>
+
+      </div>
+
+      <!-- Секция: Мечты детей -->
+      <div class="section">
+        <h2>🎯 Мечты детей</h2>
+        <div id="activeDreamsContainer"></div>
+        <div id="pendingDreamsDashboard"></div>
+      </div>
+
+      <div class="section">
+        <h2>Миссии на проверке</h2>
+        <div id="pendingTasks"></div>
+      </div>
+    </div>
+
+
+
+      <!-- Секция: Купленные награды детей -->
+      <div class="section">
+        <h2 style="display: none;">🎁 Купленные награды детей</h2>
+        <div id="rewardPurchasesDashboard"></div>
+
+      <!-- Child Bottom Navigation (капсула с blur) -->
+      <div id="childBottomNavigation" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+                                             max-width: 500px; width: calc(100% - 40px);
+                                             background: rgba(15, 14, 23, 0.85); backdrop-filter: blur(24px);
+                                             border: 1px solid rgba(167, 139, 250, 0.3);
+                                             border-radius: 24px; padding: 12px;
+                                             display: flex; justify-content: space-around; align-items: center;
+                                             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
+        <button onclick="showChildTab('child-home')" class="child-nav-btn active" data-tab="child-home">
+          <div style="font-size: 24px;">📊</div>
+          <div style="font-size: 10px; margin-top: 4px; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 800; letter-spacing: 0.1em;">ГЛАВНАЯ</div>
+        </button>
+        <button onclick="showChildTab('child-missions')" class="child-nav-btn" data-tab="child-missions">
+          <div style="font-size: 24px;">🎯</div>
+          <div style="font-size: 10px; margin-top: 4px; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 800; letter-spacing: 0.1em;">МИССИИ</div>
+        </button>
+        <button onclick="showChildTab('child-shop')" class="child-nav-btn" data-tab="child-shop">
+          <div style="font-size: 24px;">🛒</div>
+          <div style="font-size: 10px; margin-top: 4px; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 800; letter-spacing: 0.1em;">МАГАЗИН</div>
+        </button>
+        <button onclick="showChildTab('child-ai')" class="child-nav-btn" data-tab="child-ai">
+          <div style="font-size: 24px;">🤖</div>
+          <div style="font-size: 10px; margin-top: 4px; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 800; letter-spacing: 0.1em;">ИИ</div>
+        </button>
+      </div>
+      </div>
+      <div class="section">
+        <h2>История</h2>
+        <div id="historyList"></div>
+      </div>
+
+    <!-- Вкладка: Миссии -->
+    <div id="tab-missions" class="tab-content">
+      <div class="section" style="min-height: 400px; position: relative;">
+        <h2>Миссии</h2>
+        <button class="add-button" onclick="toggleAddTaskForm()">+</button>
+        
+        <div class="form-popup" id="addTaskForm" style="display: none;">
+          <h3>Создать миссию</h3>
+          <input type="text" id="taskTitle" placeholder="Название миссии*">
+          <textarea id="taskDescription" placeholder="Описание (опционально)" rows="3"></textarea>
+          <input type="number" id="taskReward" placeholder="Сумма (FAM)*">
+          
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" id="taskRecurring" onchange="toggleRecurringOptions()">
+              Повторяющаяся
+            </label>
+          </div>
+          
+          <div id="recurringOptions" style="display:none; margin-left: 20px;">
+            <select id="recurringType" onchange="toggleDaysSelection()">
+              <option value="">Выберите тип</option>
+              <option value="daily">Ежедневная</option>
+              <option value="weekends">По выходным</option>
+              <option value="custom">Выбрать дни недели</option>
+            </select>
+            
+            <div id="daysSelection" style="display:none; margin-top: 10px;">
+              <label><input type="checkbox" value="1"> Пн</label>
+              <label><input type="checkbox" value="2"> Вт</label>
+              <label><input type="checkbox" value="3"> Ср</label>
+              <label><input type="checkbox" value="4"> Чт</label>
+              <label><input type="checkbox" value="5"> Пт</label>
+              <label><input type="checkbox" value="6"> Сб</label>
+              <label><input type="checkbox" value="0"> Вс</label>
+            </div>
+          </div>
+          
+          <div class="checkbox-group">
+            <h4>Для кого миссия:</h4>
+            <div id="taskChildrenSelection"></div>
+          </div>
+          
+          <button onclick="createTask()">Создать миссию</button>
+          <button onclick="toggleAddTaskForm()">Отмена</button>
+          <div id="addTaskStatus"></div>
+        </div>
+        
+        <div id="tasksList"></div>
+      </div>
+    </div>
+
+    <!-- Вкладка: Магазин -->
+    <div id="tab-shop" class="tab-content">
+      <div class="section" style="min-height: 400px; position: relative;">
+        <h2>Магазин наград</h2>
+        <button class="add-button" onclick="toggleAddRewardForm()">+</button>
+        
+        <!-- Форма создания награды -->
+        <div class="form-popup" id="addRewardForm" style="display: none;">
+          <input type="text" id="rewardTitle" placeholder="Название награды" />
+          <textarea id="rewardDescription" placeholder="Описание награды" rows="3"></textarea>
+          <input type="number" id="rewardPrice" placeholder="Цена (1-10000)" min="1" max="10000" />
+          <label style="display: flex; align-items: center; gap: 8px; margin: 10px 0;">
+            <input type="checkbox" id="rewardIsPermanent" />
+            <span>Постоянный слот (остаётся после покупки)</span>
+          </label>
+          <button onclick="createReward()">Создать награду</button>
+          <button onclick="toggleAddRewardForm()">Отмена</button>
+        </div>
+
+        <!-- Список наград -->
+        <div id="rewardsList"></div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Вкладка: Профиль ребёнка -->
+    <div id="tab-profile" class="tab-content">
+      <div class="section">
+        <h2>👤 Мой профиль</h2>
+        <div id="profileInfo">
+          <p><strong>Имя:</strong> <span id="profileName">-</span></p>
+          <p><strong>Баланс:</strong> <span id="profileBalance">0</span> ⭐</p>
+
+          <div style="margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+            <h3 style="margin: 0 0 10px 0; font-size: 18px;">🏆 <span id="profileLevelName">Новичок</span> <span id="profileLevelIcon">❤️</span></h3>
+            <div style="position: relative; background: rgba(255,255,255,0.3); border-radius: 10px; height: 24px; overflow: hidden; margin-bottom: 8px;">
+              <div id="profileProgressBar" style="background: white; height: 100%; width: 0%; transition: width 0.5s;"></div>
+              <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                <span id="marker0" style="position: absolute; left: 0%; top: 50%; transform: translate(0%, -50%); font-size: 16px; transition: opacity 0.3s;">❤️</span>
+                <span id="marker25" style="position: absolute; left: 25%; top: 50%; transform: translate(-50%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">💎</span>
+                <span id="marker50" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">🏔️</span>
+                <span id="marker75" style="position: absolute; left: 75%; top: 50%; transform: translate(-50%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">🌟</span>
+                <span id="marker100" style="position: absolute; left: 100%; top: 50%; transform: translate(-100%, -50%); font-size: 16px; opacity: 0.3; transition: opacity 0.3s;">🚀</span>
+              </div>
+            </div>
+            <p style="margin: 0; font-size: 14px; opacity: 0.9;">
+              <span id="profileProgressText">0/25 миссий</span> • 
+              <span id="profileProgressNext">До Опытного: 25 миссий</span>
+            </p>
+          </div>
+          <p><strong>Выполнено миссий:</strong> <span id="profileMissionsCount">0</span></p>
+          <p><strong>Получено наград:</strong> <span id="profileRewardsCount">0</span></p>
+          <p><strong>Код ребёнка:</strong> <span id="profileChildCode">-</span></p>
+          <p><strong>Заработано всего:</strong> <span id="profileTotalEarned">0</span> ⭐</p>
+        </div>
+      </div>
+    </div>
+
+    
+
+  <script src="app.js"></script>
+
+  <!-- ========================================= -->
+  <!-- МОДАЛЬНОЕ ОКНО НАСТРОЙКИ                  -->
+  <!-- ========================================= -->
+  <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto;">
+    <div style="max-width: 600px; margin: 50px auto; background: white; border-radius: 16px; padding: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+      
+      <!-- Заголовок -->
+      <div style="padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">Коды доступа</h2>
+        <button onclick="closeSettingsModal()" style="background: none; border: none; font-size: 32px; cursor: pointer; color: #999;">&times;</button>
+      </div>
+      
+      <!-- Список кодов -->
+      <div id="referralsModalList" style="padding: 20px;">
+        <p>Загрузка кодов...</p>
+      </div>
+      
+      <!-- Настройки платформы -->
+      <div style="padding: 20px; border-top: 1px solid #ddd;">
+        <h3 style="color: #666; font-size: 14px; text-transform: uppercase; margin-bottom: 15px;">Настройки платформы</h3>
+        <button onclick="deleteParentProfile()" style="width: 100%; padding: 15px; background: #ff4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">Удалить профиль родителя</button>
+      </div>
+      
+      <!-- Добавить ребёнка -->
+      <div style="padding: 20px; border-top: 1px solid #ddd;">
+        <button onclick="closeSettingsModal(); toggleAddChildForm();" style="width: 100%; padding: 15px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">Добавить ребёнка</button>
+      </div>
+      
+    </div>
+  </div>
+
+
+</body>
+</html>
