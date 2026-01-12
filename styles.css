@@ -1,5 +1,10 @@
+html, body {
+  background: #000 !important;
+  margin: 0;
+  padding: 0;
+}
     body { font-family: "Plus Jakarta Sans", Arial, sans-serif; padding: 0; margin: 0; max-width: 800px; margin: 0 auto; background: #000000; color: #FFFFFF; }
-    .section { margin: 20px; padding: 20px; background: #0F0E17; border: 1px solid #2D2B3F; border-radius: 16px; position: relative; }
+    .section { margin: 20px; padding: 20px; background: transparent; border: none; border-radius: 16px; position: relative; }
     h1, h2 { margin-top: 0; }
     button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
     .task-item, .child-item { padding: 15px; margin: 10px 0; border: 1px solid #ddd; background: #f9f9f9; position: relative; }
