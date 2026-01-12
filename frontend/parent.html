@@ -1158,17 +1158,24 @@ body {
         
         // 2. BALANCE: только деньги
         document.getElementById('childPersonalBalance').innerHTML = `
-          <div class="section">
-            <h3>💰 Баланс</h3>
-            <div style="font-size: 32px; font-weight: bold; color: #4CAF50; text-align: center;">
-              ${child.balance} ⭐
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px;">
+            <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%); border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 48px; height: 48px; background: rgba(34, 197, 94, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">↗</div>
+                <div style="flex: 1;">
+                  <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Баланс</div>
+                  <div style="font-size: 28px; font-weight: bold; color: #22c55e;">${child.balance} ⭐</div>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div class="section">
-            <h3>⏳ На проверке</h3>
-            <div style="font-size: 32px; font-weight: bold; color: #FF9800; text-align: center;">
-              ${child.pending_balance} ⭐
+            <div style="background: linear-gradient(135deg, #78350f 0%, #1e293b 100%); border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 48px; height: 48px; background: rgba(251, 146, 60, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">↙</div>
+                <div style="flex: 1;">
+                  <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Проверка</div>
+                  <div style="font-size: 28px; font-weight: bold; color: #fb923c;">${child.pending_balance} ⭐</div>
+                </div>
+              </div>
             </div>
           </div>
         `;
