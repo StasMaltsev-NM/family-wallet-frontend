@@ -1,0 +1,38 @@
+# Environment variables
+.env
+backend/.env
+
+# Backups and archives
+*.zip
+*.tar.gz
+BACKUP-*/
+_dump/
+
+# Old versions
+parent_new/
+parent_v2/
+FINAL-FIXED/
+KEEP-COMPLETED/
+SPA-*/
+
+# Build artifacts
+node_modules/
+.DS_Store
+TODO.md
+*.png
+backend/*.backup*
+FAMILY_WALLET_MVP/
+FAMILY_WALLET_MVP_RESTORED/
+FAMILY_WALLET_PROJ/
+family-wallet-temp/
+neuro-api-hub/
+Загрузки/
+.localized
+server.log
+BACKUPS_ARCHIVE_*/
+frontend/*.htmlbackToChildrenList
+*.save
+*.bak
+*.backup-*
+*.mov
+.DS_Store
