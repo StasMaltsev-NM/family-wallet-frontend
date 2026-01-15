@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Family Wallet — Родитель</title>
 <style>
 /* settings icon fix */
@@ -215,9 +215,53 @@ body {
 
   /* чтобы контент не прятался под pill */
   #mainApp{ padding-bottom: 120px; }
+/* === MOBILE LAYOUT FIX === */
+#appRoot {
+  max-width: 420px;
+  margin: 0 auto;
+  padding-bottom: 96px; /* место под bottom-nav */
+}
+
+@media (max-width: 480px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  #topBar {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .bottom-nav {
+    left: 50% !important;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 420px;
+  }
+}
+
+/* MOBILE OVERRIDES */
+@media (max-width: 900px) {
+  body { margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }
+  #mainApp { padding: 0 !important; }
+  [style*="max-width"] { max-width: none !important; }
+  [style*="width: 900px"] { width: 100% !important; }
+  [style*="width: 1000px"] { width: 100% !important; }
+}
+  .section { width: calc(100% - 24px) !important; max-width: none !important; margin: 12px !important; }
+  .tab-content { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+
+  /* частый кейс: inline margin: 20px */
+  [style*="margin: 20px"] { margin: 12px !important; }
+  [style*="margin: 20px;"] { margin: 12px !important; }
+
+  #topBar { padding-left: 16px !important; padding-right: 16px !important; }
+}
+
 </style>
 </head>
 <body>
+<div id="appRoot">
   
   <div class="section" style="display: none;">
     <h2>Авторизация</h2>
@@ -2528,5 +2572,6 @@ body {
     }
   </script>
 
+</div>
 </body>
 </html>
