@@ -2,15 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Family Wallet — Родитель</title>
-<style>
-/* settings icon fix */
-.settings-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  <style>
 /* Тёмная тема */
 :root {
   --bg-dark: #0a0a0a;
@@ -33,29 +27,8 @@ body {
   background: var(--bg-card) !important;
   color: var(--text-light) !important;
 }
-    body { font-family: Arial, sans-serif; padding: 0; margin: 0; }
+    body { font-family: Arial, sans-serif; padding: 0; margin: 0; max-width: 800px; margin: 0 auto; }
     .section { margin: 20px; padding: 20px; border: 2px solid #ccc; position: relative; }
-/* MOBILE FIX: не ломаем всё, а правим ключевые контейнеры */
-@media (max-width: 900px) {
-  body { margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }
-
-  .section {
-    margin: 12px !important;
-    padding: 16px !important;
-    border-width: 1px !important;
-  }
-
-  /* если где-то есть узкие контентные блоки */
-  .tab-content {
-    margin: 0 !important;
-    padding: 0 !important;
-    max-width: none !important;
-    width: 100% !important;
-  }
-
-  /* все inline max-width, которые встречаются в разметке */
-  [style*="max-width"] { max-width: none !important; }
-}
     h1, h2 { margin-top: 0; }
     button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
     .task-item, .child-item { padding: 15px; margin: 10px 0; border: 1px solid #ddd; background: #f9f9f9; position: relative; }
@@ -192,207 +165,49 @@ body {
     }
 
   </style>
-<style id="bottom-nav-pill-css">
-  /* Bottom Nav (Pill) - override */
-  .bottom-nav{
-    position: fixed;
-    left: 50%;
-    bottom: 22px;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 22px;
-    padding: 14px 18px;
-    border-radius: 26px;
-    background: rgba(17,17,27,0.72);
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.55), inset 0 0 20px rgba(255,255,255,0.04);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    z-index: 9999;
-  }
-
-  .bottom-nav .nav-item{
-    background: transparent !important;
-    border: 0 !important;
-    color: rgba(226,232,240,0.75);
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    min-width: 70px;
-  }
-
-  .bottom-nav .nav-ico{ font-size: 28px; line-height: 1; }
-  .bottom-nav .nav-label{
-    font-size: 12px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .bottom-nav .nav-item.active{ color: #fbbf24; }
-  .bottom-nav .nav-item.active .nav-ico{ filter: drop-shadow(0 0 10px rgba(251,191,36,0.35)); }
-
-  /* чтобы контент не прятался под pill */
-  #mainApp{ padding-bottom: 120px; }
-/* === MOBILE LAYOUT FIX === */
-/* lock horizontal + remove “wobble” */
-html, body{
-  margin:0 !important;
-  padding:0 !important;
-  width:100% !important;
-  max-width:none !important;
-  overflow-x:hidden !important;
-  background:#000 !important;
-}
-
-#mainApp{width:100%;max-width:100%;margin:0;padding:0;overflow-x:hidden;background:#000;}
-#appRoot{width:100%;max-width:100%;margin:0;padding:0 0 96px 0;overflow-x:hidden;background:#000;box-sizing:border-box;}
-/* отступы у карточек на мобиле, чтобы не было люфта */
-@media (max-width: 900px){
-  .section{ margin:12px !important; }
-  .tab-content{ margin:0 !important; padding:0 !important; }
-  /* если где-то остались inline max-width - убираем */
-  [style*="max-width"]{ max-width:none !important; }
-}
-@media (max-width: 480px) {
-  body {
-    overflow-x: hidden;
-  }
-
-  #topBar {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-  }
-
-  .bottom-nav {
-    left: 50% !important;
-    transform: translateX(-50%);
-    width: calc(100% - 24px);
-  }
-}
-
-/* MOBILE OVERRIDES */
-@media (max-width: 900px) {
-  body { max-width: none !important; margin: 0 !important; }
-  #mainApp { width: 100% !important; max-width: none !important; margin: 0 !important; }
-  #topBar { width: 100% !important; }
-  body { margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }
-  #mainApp { padding: 0 !important; }
-  [style*="max-width"] { max-width: none !important; }
-  [style*="width: 900px"] { width: 100% !important; }
-  [style*="width: 1000px"] { width: 100% !important; }
-}
-  .section { width: calc(100% - 24px) !important; max-width: none !important; margin: 12px !important; }
-  .tab-content { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
-
-  /* частый кейс: inline margin: 20px */
-  [style*="margin: 20px"] { margin: 12px !important; }
-  [style*="margin: 20px;"] { margin: 12px !important; }
-
-  #topBar { padding-left: 16px !important; padding-right: 16px !important; }
-}
-
-</style>
 </head>
 <body>
-<div id="appRoot">
   
-  <div class="section" style="display: none;">
+  <div class="section">
     <h2>Авторизация</h2>
     <input type="text" id="inviteCode" placeholder="Введите код приглашения (SRFK4A1C)" value="SRFK4A1C">
     <button onclick="login()">Войти</button>
-    </div>
+    
+-->
 
     <!-- ========================================= -->
     <!-- ВЕРХНЯЯ ШАПКА (постоянная)                -->
     <!-- ========================================= -->
-    <!-- ========================================= -->
-    <!-- TopBar: "The Control Strip" (AAA Edition) -->
-    <!-- ========================================= -->
-    <!-- ========================================= -->
-    <!-- TopBar: "Orbital Command" (AAA Edition) -->
-    <!-- ========================================= -->
-    <div id="topBar" style="position: sticky; top: 0; z-index: 1000; background: #000000; padding: 24px 24px 16px 24px;">
+    <div id="topBar" style="display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
       
-      <!-- Top Row: Logo + Buttons (Fixed, над слайдером) -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: relative; z-index: 10;">
-        
-        <!-- Brand Logo (Left) -->
-        <div style="font-size: 24px; font-weight: 900; letter-spacing: -0.05em; color: #ffffff;">
-          Family Wallet
-        </div>
-        
-        <!-- Action Buttons (Right) -->
-        <div style="display: flex; gap: 12px; align-items: center;">
-          
-          <!-- Theme Button (скрыта, для будущего) -->
-          <button style="display: none; width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(148,163,184,1); cursor: pointer; align-items: center; justify-content: center; transition: all 0.3s ease; font-size: 20px;" title="Тема">
-            🎨
-          </button>
-          
-          <!-- Settings Button -->
-          <button onclick="openSettingsModal()" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(148,163,184,1); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; font-size: 20px; padding: 0; line-height: 0;" onmouseover="this.style.boxShadow='0 0 15px rgba(167,139,250,0.4)'; this.style.color='#a78bfa'; this.style.borderColor='rgba(167,139,250,0.3)';" onmouseout="this.style.boxShadow='none'; this.style.color='rgba(148,163,184,1)'; this.style.borderColor='rgba(255,255,255,0.1)';" title="Настройки">
-<svg xmlns="http://www.w3.org/2000/svg"
-     width="22" height="22"
-     viewBox="0 0 24 24"
-     fill="none"
-     stroke="currentColor"
-     stroke-width="1.75"
-     stroke-linecap="round"
-     stroke-linejoin="round"
-     aria-hidden="true">
-  <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-  <path d="M19.4 15a7.9 7.9 0 0 0 .1-1 7.9 7.9 0 0 0-.1-1l2-1.6a.5.5 0 0 0 .1-.6l-1.9-3.3a.5.5 0 0 0-.6-.2l-2.4 1a8.3 8.3 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.4h-3.8a.5.5 0 0 0-.5.4l-.4 2.6a8.3 8.3 0 0 0-1.7 1l-2.4-1a.5.5 0 0 0-.6.2L2.5 10.8a.5.5 0 0 0 .1.6l2 1.6a7.9 7.9 0 0 0-.1 1 7.9 7.9 0 0 0 .1 1l-2 1.6a.5.5 0 0 0-.1.6l1.9 3.3a.5.5 0 0 0 .6.2l2.4-1a8.3 8.3 0 0 0 1.7 1l.4 2.6a.5.5 0 0 0 .5.4h3.8a.5.5 0 0 0 .5-.4l.4-2.6a8.3 8.3 0 0 0 1.7-1l2.4 1a.5.5 0 0 0 .6-.2l1.9-3.3a.5.5 0 0 0-.1-.6z"/>
-</svg>
-    </button>
-        </div>
-      </div>
-      <!-- Children Slider (Scrollable, под кнопками) -->
-      <div id="childrenTabs" style="display: flex; gap: 24px; align-items: center; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; position: relative; padding-top: 10px; padding-bottom: 14px; overflow-y: visible;">
-        <!-- Аватарки рендерятся через renderTopBar() -->
-      </div>
+      <!-- Логотип -->
+      <div id="logoContainer" style="font-size: 18px; font-weight: bold; cursor: default; color: #999; display: none;">💰 Family Wallet</div>
       
-      <!-- Hide scrollbar (CSS) -->
-      <style>
-        #childrenTabs::-webkit-scrollbar {
-          display: none;
-        }
-      </style>
+      <!-- Список детей (аватарки) -->
+      <div id="childrenTabs" style="display: flex; gap: 10px; align-items: center;"></div>
+      
+      <!-- Иконки -->
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <button onclick="toggleAddChildForm()" style="background: #4CAF50; border: none; color: white; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" title="Добавить ребёнка">+</button>
+        <button onclick="alert('AI Помощник — в разработке')" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer;">🎨</button>
+        <button onclick="openSettingsModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">⚙️</button>
+      </div>
     </div>
 
     <div id="authStatus"></div>
   </div>
 
-  <div id="mainApp" style="display:none; background:#000;">
-        <!-- Навигация -->
-    <div class="nav-tabs"></div>
-
-    <!-- Bottom Nav (Pill) -->
-    <div class="bottom-nav">
-      <button class="nav-item active" onclick="showTab('tab-home')" aria-label="Главная">
-        <span class="nav-ico">▦</span>
-        <span class="nav-label">Главная</span>
-      </button>
-
-      <button class="nav-item" onclick="showTab('tab-missions')" aria-label="Миссии">
-        <span class="nav-ico">◎</span>
-        <span class="nav-label">Миссии</span>
-      </button>
-
-      <button class="nav-item" onclick="showTab('tab-shop')" aria-label="Магазин">
-        <span class="nav-ico">▢</span>
-        <span class="nav-label">Магазин</span>
-      </button>
-
-      <button class="nav-item" onclick="showTab('tab-ai')" aria-label="ИИ">
-        <span class="nav-ico">✦</span>
-        <span class="nav-label">ИИ</span>
-      </button>
+  <div id="mainApp" style="display:none;">
+    <!-- Навигация -->
+    <div class="nav-tabs">
+      <button class="active" onclick="showTab('tab-home')">Главная</button>
+      <button onclick="showTab('tab-missions')">Миссии</button>
+      <button onclick="showTab('tab-shop')">Магазин</button>
+      <button id="profileTabButton" onclick="showTab('tab-profile')" style="display: none;">Профиль</button>
+      <!-- <!-- <button onclick="showTab('tab-ai')">ИИ</button> (MVP: перенесено в профиль ребёнка) --> (Временно отключено) -->
     </div>
 
-<!-- Вкладка: Главная -->
+    <!-- Вкладка: Главная -->
       <!-- Модальное окно для добавления ребёнка -->
       <div id="addChildModal" class="modal-backdrop" >
         <div class="modal-content">
@@ -432,30 +247,18 @@ html, body{
         <div id="childPersonalBalance"></div>
 
 
-        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 20px; padding: 20px; margin: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
-          <div class="collapsible-header" onclick="toggleSection('childPersonalTasks')" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 40px; height: 40px; background: rgba(251, 191, 36, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📋</div>
-              <span style="font-size: 16px; font-weight: 600; color: white; text-transform: uppercase; letter-spacing: 0.5px;">Миссии на проверку</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <span id="childPersonalTasksBadge" class="badge" style="display:none; background: #fbbf24; color: #000; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">0</span>
-              <span class="toggle-icon" style="color: #64748b; font-size: 18px;">▼</span>
-            </div>
+<div class="section">
+          <div class="collapsible-header" onclick="toggleSection('childPersonalTasks')">
+            <h2>🎯 Миссии <span id="childPersonalTasksBadge" class="badge" style="display:none;">0</span></h2>
+            <span class="toggle-icon">▼</span>
           </div>
           <div id="childPersonalTasks" class="collapsible-content"></div>
         </div>
         
-        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 20px; padding: 20px; margin: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
-          <div class="collapsible-header" onclick="toggleSection('childPersonalRewards')" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 40px; height: 40px; background: rgba(168, 85, 247, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">🎁</div>
-              <span style="font-size: 16px; font-weight: 600; color: white; text-transform: uppercase; letter-spacing: 0.5px;">Вручить награды</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <span id="childPersonalRewardsBadge" class="badge" style="display:none; background: #a855f7; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">0</span>
-              <span class="toggle-icon" style="color: #64748b; font-size: 18px;">▼</span>
-            </div>
+        <div class="section">
+          <div class="collapsible-header" onclick="toggleSection('childPersonalRewards')">
+            <h2>🎁 Купленные награды <span id="childPersonalRewardsBadge" class="badge" style="display:none;">0</span></h2>
+            <span class="toggle-icon">▼</span>
           </div>
           <div id="childPersonalRewards" class="collapsible-content"></div>
         </div>
@@ -625,6 +428,7 @@ html, body{
           </div>
           <p><strong>Выполнено миссий:</strong> <span id="profileMissionsCount">0</span></p>
           <p><strong>Получено наград:</strong> <span id="profileRewardsCount">0</span></p>
+          <p><strong>Код ребёнка:</strong> <span id="profileChildCode">-</span></p>
           <p><strong>Заработано всего:</strong> <span id="profileTotalEarned">0</span> ⭐</p>
         </div>
       </div>
@@ -700,55 +504,20 @@ html, body{
       }
 
       container.innerHTML = childrenData.map(child => `
-<div onclick="switchChild('${child.id}')" style="cursor: pointer; text-align: center; position: relative; width: 72px; flex-shrink: 0; margin: 0 12px;">
-  
-  <!-- Контейнер с обводками (концентричные круги через transform) -->
-  <div style="position: relative; width: 72px; height: 72px; margin: 0 auto;">
-    
-    <!-- Жёлтая обводка (уведомления) -->
-    ${(child.pending_tasks_count > 0 || child.pending_rewards_count > 0) ? `
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 72px; height: 72px; border-radius: 50%; border: 3px solid #fbbf24; box-shadow: 0 0 15px rgba(251,191,36,0.7);"></div>
-    ` : ''}
-    
-    <!-- Фиолетовая обводка (активный) -->
-    ${selectedChildId === child.id ? `
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; border: 3px solid #a78bfa; box-shadow: 0 0 12px rgba(167,139,250,0.8);"></div>
-    ` : ''}
-    
-    <!-- Серая обводка (неактивный без уведомлений) -->
-    ${selectedChildId !== child.id && !(child.pending_tasks_count > 0 || child.pending_rewards_count > 0) ? `
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);"></div>
-    ` : ''}
-    
-    <!-- Аватар (центр) -->
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border-radius: 50%; background: #1a1a2e; display: flex; align-items: center; justify-content: center; font-size: 28px; ${selectedChildId !== child.id && !(child.pending_tasks_count > 0 || child.pending_rewards_count > 0) ? 'filter: grayscale(1); opacity: 0.5;' : ''}">
-      ${child.avatar || '👤'}
-    </div>
-  </div>
-  
-  <!-- Имя ребёнка -->
-  <div style="width: 72px; font-size: 11px; margin-top: 6px; font-weight: 700; text-align: center; color: ${selectedChildId === child.id ? '#a78bfa' : '#94a3b8'}; text-transform: uppercase; letter-spacing: 0.05em;">
-    ${child.name}
-  </div>
-</div>
+        <div onclick="switchChild('${child.id}')" style="cursor: pointer; text-align: center; margin: 0 8px;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; background: ${selectedChildId === child.id ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#2d2d44'}; padding: 2px;">
+            <div style="width: 100%; height: 100%; border-radius: 50%; background: #1a1a2e; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+              ${child.avatar || '👤'}
+            </div>
+          </div>
+          <div style="font-size: 11px; margin-top: 4px; color: ${selectedChildId === child.id ? '#a78bfa' : '#666'};">${child.name}</div>
+        </div>
       `).join("");
-      
-      // Кнопка "Добавить ребёнка"
-      container.innerHTML += `
-        <button onclick="toggleAddChildForm()" style="width: 56px; height: 56px; border-radius: 50%; border: 2px dashed rgba(255,255,255,0.2); background: transparent; color: rgba(148,163,184,1); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.3s ease; flex-shrink: 0; transform: translateY(-8px);" onmouseover="this.style.borderColor='rgba(167,139,250,0.5)'; this.style.color='#a78bfa'; this.style.transform='translateY(-8px) scale(1.1)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'; this.style.color='rgba(148,163,184,1)'; this.style.transform='translateY(-8px) scale(1)';" title="Добавить ребёнка">
-          +
-        </button>
-      `;
     }
-function setBottomNavActive(tabId){
-  document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
-    const onclickVal = btn.getAttribute('onclick') || '';
-    btn.classList.toggle('active', onclickVal.includes("'" + tabId + "'"));
-  });
-}
+
     function showTab(tabId) {
- setBottomNavActive(tabId);
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
       
       document.getElementById(tabId).classList.add('active');
       event.target.classList.add('active');
@@ -835,11 +604,6 @@ function setBottomNavActive(tabId){
           }
         });
       }
-
-      // Автоматический вход при загрузке страницы
-      const savedCode = localStorage.getItem("invite_code") || "SRFK4A1C";
-      document.getElementById("inviteCode").value = savedCode;
-      login();
     });
 
     function toggleAddTaskForm() {
@@ -1239,6 +1003,7 @@ function setBottomNavActive(tabId){
 
         familyId = data.family_id;
         
+        document.getElementById('authStatus').innerHTML = `<p class="success">✅ Добро пожаловать, ${data.family_name}!</p>`;
         document.getElementById('mainApp').style.display = 'block';
 
         await loadChildren();
@@ -1383,33 +1148,27 @@ function setBottomNavActive(tabId){
         // Отображаем заголовок
         // 1. HEADER: только identity
         document.getElementById('childPersonalHeader').innerHTML = `
-          <div class="section" style="display:none;">
+          <div class="section">
             <h2>${child.name} (${child.role}, ${child.age} лет)</h2>
             <div style="color: #666; margin-top: 5px;">
+              Код ребёнка: ${child.invite_code}
             </div>
           </div>
         `;
         
         // 2. BALANCE: только деньги
         document.getElementById('childPersonalBalance').innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px;">
-            <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%); border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
-              <div style="display: flex; align-items: center; gap: 15px;">
-                <div style="width: 48px; height: 48px; background: rgba(34, 197, 94, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">↗</div>
-                <div style="flex: 1;">
-                  <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Баланс</div>
-                  <div style="font-size: 28px; font-weight: bold; color: #22c55e;">${child.balance} ⭐</div>
-                </div>
-              </div>
+          <div class="section">
+            <h3>💰 Баланс</h3>
+            <div style="font-size: 32px; font-weight: bold; color: #4CAF50; text-align: center;">
+              ${child.balance} ⭐
             </div>
-            <div style="background: linear-gradient(135deg, #78350f 0%, #1e293b 100%); border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
-              <div style="display: flex; align-items: center; gap: 15px;">
-                <div style="width: 48px; height: 48px; background: rgba(251, 146, 60, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">↙</div>
-                <div style="flex: 1;">
-                  <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Проверка</div>
-                  <div style="font-size: 28px; font-weight: bold; color: #fb923c;">${child.pending_balance} ⭐</div>
-                </div>
-              </div>
+          </div>
+          
+          <div class="section">
+            <h3>⏳ На проверке</h3>
+            <div style="font-size: 32px; font-weight: bold; color: #FF9800; text-align: center;">
+              ${child.pending_balance} ⭐
             </div>
           </div>
         `;
@@ -1838,27 +1597,16 @@ function setBottomNavActive(tabId){
         const progress = Math.min(100, Math.round((childDream.current_amount / childDream.target_amount) * 100));
         
         container.innerHTML = `
-          <div style="display: flex; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 24px; overflow: hidden; padding: 20px; margin: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
-            <div style="width: 160px; height: 160px; border-radius: 16px; overflow: hidden; flex-shrink: 0; position: relative;">
-              <img src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400" style="width: 100%; height: 100%; object-fit: cover;" />
-              <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); border-radius: 8px; padding: 6px; font-size: 20px;">✨</div>
+          <div class="section">
+            <h3>🎯 Мечта: ${childDream.title}</h3>
+            <div class="dream-progress-bar">
+              <div class="dream-progress-fill" style="width: ${progress}%"></div>
             </div>
-            <div style="flex: 1; margin-left: 20px; display: flex; flex-direction: column; justify-content: space-between;">
-              <div>
-                <div style="font-size: 12px; color: #a78bfa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">МЕЧТА</div>
-                <div style="font-size: 20px; font-weight: bold; color: white; margin-bottom: 12px;">${childDream.title}</div>
-              </div>
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-size: 11px; color: #64748b; text-transform: uppercase;">Прогресс</span>
-                  <span style="font-size: 18px; font-weight: bold; color: #a78bfa;">${childDream.current_amount} ⭐</span>
-                </div>
-                <div style="font-size: 11px; color: #64748b; text-align: right;">из ${childDream.target_amount}</div>
-                <div style="width: 100%; height: 6px; background: #1e293b; border-radius: 3px; margin-top: 8px; overflow: hidden;">
-                  <div style="width: ${progress}%; height: 100%; background: linear-gradient(90deg, #a78bfa 0%, #c084fc 100%); border-radius: 3px;"></div>
-                </div>
-                <div style="text-align: right; font-size: 12px; color: #a78bfa; margin-top: 4px; font-weight: 600;">${progress}%</div>
-              </div>
+            <div style="text-align: center; font-size: 18px; font-weight: bold;">
+              ${childDream.current_amount} / ${childDream.target_amount} ⭐
+            </div>
+            <div style="text-align: center; color: #666; margin-top: 5px;">
+              Прогресс: ${progress}%
             </div>
           </div>
         `;
@@ -2231,6 +1979,7 @@ function setBottomNavActive(tabId){
         document.getElementById('profileMissionsCount').textContent = 
           (tasksData.tasks || []).filter(t => t.status === 'CONFIRMED').length;
         document.getElementById('profileRewardsCount').textContent = rewardsData.count || 0;
+        document.getElementById('profileChildCode').textContent = child.invite_code || 'Код не найден';
         document.getElementById('profileTotalEarned').textContent = (tasksData.tasks || []).filter(t => t.status === 'CONFIRMED').reduce((sum, t) => sum + (t.reward_amount || 0), 0);
         
         // Обновить прогресс-бар и уровень
@@ -2432,15 +2181,7 @@ function setBottomNavActive(tabId){
     }
 
 
-  function setBottomNavActive(tabId){
-  const items = document.querySelectorAll('.bottom-nav .nav-item');
-  items.forEach(b=>{
-    const on = (b.getAttribute('onclick')||'').includes("'" + tabId + "'");
-    b.classList.toggle('active', on);
-  });
-}
-
-</script>
+  </script>
 
   <!-- ========================================= -->
   <!-- МОДАЛЬНОЕ ОКНО НАСТРОЙКИ                  -->
