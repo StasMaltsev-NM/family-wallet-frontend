@@ -1,0 +1,135 @@
+
+      // POST /api/rewards/purchase — покупка награды (только ребёнок)
+      if (path === '/api/rewards/purchase' && request.method === 'POST') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        
+        if (!inviteCode) {
+          return error('Отсутствует заголовок X-Invite-Code', 'NO_AUTH', 401);
+        }
+
+        const child = await env.DB.prepare(
+          'SELECT id, family_id, name, balance FROM children WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!child) {
+          return error('Только ребёнок может покупать награды', 'FORBIDDEN', 403);
+        }
+
+        const body = await request.json();
+        const { reward_id } = body;
+
+        if (!reward_id) {
+          return error('Отсутствует reward_id', 'INVALID_DATA', 400);
+        }
+
+        const reward = await env.DB.prepare(
+          'SELECT id, family_id, title, icon, price, is_permanent FROM rewards WHERE id = ? AND family_id = ? AND is_active = 1'
+        ).bind(reward_id, child.family_id).first();
+
+        if (!reward) {
+          return error('Награда не найдена или недоступна', 'NOT_FOUND', 404);
+        }
+
+        if (child.balance < reward.price) {
+          return error('Недостаточно средств', 'INSUFFICIENT_BALANCE', 400);
+        }
+
+        const newBalance = child.balance - reward.price;
+        await env.DB.prepare(
+          'UPDATE children SET balance = ? WHERE id = ?'
+        ).bind(newBalance, child.id).run();
+
+        const purchaseId = `purchase_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        await env.DB.prepare(`
+          INSERT INTO reward_purchases (id, reward_id, child_id, family_id, reward_title, reward_icon, price, status, purchased_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))
+        `).bind(
+          purchaseId,
+          reward.id,
+          child.id,
+          child.family_id,
+          reward.title,
+          reward.icon,
+          reward.price
+        ).run();
+
+        if (reward.is_permanent === 0) {
+          await env.DB.prepare(
+            'UPDATE rewards SET is_active = 0 WHERE id = ?'
+          ).bind(reward.id).run();
+        }
+
+        return json({
+          message: 'Награда куплена',
+          purchase: {
+            id: purchaseId,
+            reward_title: reward.title,
+            price: reward.price
+          },
+          new_balance: newBalance
+        });
+      }
+
+      // GET /api/rewards/purchases — список купленных наград ребёнка
+      if (path === '/api/rewards/purchases' && request.method === 'GET') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        
+        if (!inviteCode) {
+          return error('Отсутствует заголовок X-Invite-Code', 'NO_AUTH', 401);
+        }
+
+        const child = await env.DB.prepare(
+          'SELECT id FROM children WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!child) {
+          return error('Недействительный код', 'FORBIDDEN', 403);
+        }
+
+        const purchases = await env.DB.prepare(`
+          SELECT id, reward_id, reward_title, reward_icon, price, status, purchased_at
+          FROM reward_purchases
+          WHERE child_id = ? AND status = 'pending'
+          ORDER BY purchased_at DESC
+        `).bind(child.id).all();
+
+        return json({ purchases: purchases.results || [] });
+      }
+
+      // POST /api/rewards/confirm-received — подтверждение получения награды
+      if (path === '/api/rewards/confirm-received' && request.method === 'POST') {
+        const inviteCode = request.headers.get('X-Invite-Code');
+        
+        if (!inviteCode) {
+          return error('Отсутствует заголовок X-Invite-Code', 'NO_AUTH', 401);
+        }
+
+        const child = await env.DB.prepare(
+          'SELECT id FROM children WHERE invite_code = ?'
+        ).bind(inviteCode).first();
+
+        if (!child) {
+          return error('Недействительный код', 'FORBIDDEN', 403);
+        }
+
+        const body = await request.json();
+        const { purchase_id } = body;
+
+        if (!purchase_id) {
+          return error('Отсутствует purchase_id', 'INVALID_DATA', 400);
+        }
+
+        const purchase = await env.DB.prepare(
+          'SELECT id FROM reward_purchases WHERE id = ? AND child_id = ? AND status = \'pending\''
+        ).bind(purchase_id, child.id).first();
+
+        if (!purchase) {
+          return error('Покупка не найдена', 'NOT_FOUND', 404);
+        }
+
+        await env.DB.prepare(
+          'UPDATE reward_purchases SET status = \'received\', received_at = datetime(\'now\') WHERE id = ?'
+        ).bind(purchase_id).run();
+
+        return json({ message: 'Награда отмечена как полученная' });
+      }
